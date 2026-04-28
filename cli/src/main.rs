@@ -50,7 +50,7 @@ fn main() -> Result<()> {
             commands::init::run(&dir, force, &addons)?;
         }
         Commands::Upgrade { dir, no_backup, addons } => {
-            println!("upgrade: dir={} no_backup={} addons={:?}", dir, no_backup, addons);
+            commands::upgrade::run(&dir, no_backup, &addons)?;
         }
         Commands::Status { dir } => {
             println!("status: dir={}", dir);

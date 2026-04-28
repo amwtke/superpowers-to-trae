@@ -2,7 +2,6 @@
 
 use anyhow::{anyhow, Result};
 use std::path::{Path, PathBuf};
-use std::fs;
 use include_dir::DirEntry;
 use crate::{addons, agents_md, embed, rollback};
 
@@ -31,7 +30,15 @@ pub fn run(dir_arg: &str, force: bool, addons_list: &[String]) -> Result<()> {
         Ok::<PathBuf, anyhow::Error>(PathBuf::from(dir_arg))
     })?;
     preflight(&dir, force)?;
+    run_with_options(&dir, force, /* backup_existing */ force, addons_list)
+}
 
+pub fn run_with_options(
+    dir: &Path,
+    _force: bool,
+    backup_existing: bool,
+    _addons_list: &[String],
+) -> Result<()> {
     let mut session = rollback::InstallSession::new();
 
     // Phase 1: install rules/project_rules.md (renamed from user_rules.md in dist)
@@ -40,7 +47,7 @@ pub fn run(dir_arg: &str, force: bool, addons_list: &[String]) -> Result<()> {
         .ok_or_else(|| anyhow!("embedded dist missing rules/user_rules.md"))?;
     let project_rules_body = std::str::from_utf8(rules_src.contents())?;
     let rules_target = dir.join(".trae/rules/project_rules.md");
-    if let Err(e) = session.write(&rules_target, rules_src.contents(), force) {
+    if let Err(e) = session.write(&rules_target, rules_src.contents(), backup_existing) {
         session.rollback();
         return Err(e);
     }
@@ -49,7 +56,7 @@ pub fn run(dir_arg: &str, force: bool, addons_list: &[String]) -> Result<()> {
     let skills_dir = embed::DIST_USER
         .get_dir("skills/superpowers")
         .ok_or_else(|| anyhow!("embedded dist missing skills/superpowers"))?;
-    if let Err(e) = write_embedded_dir(skills_dir, &dir.join(".trae"), force, &mut session) {
+    if let Err(e) = write_embedded_dir(skills_dir, &dir.join(".trae"), backup_existing, &mut session) {
         session.rollback();
         return Err(e);
     }
@@ -58,7 +65,7 @@ pub fn run(dir_arg: &str, force: bool, addons_list: &[String]) -> Result<()> {
     let skills = collect_skill_frontmatters()?;
     let agents_md_body = agents_md::render_agents_md(project_rules_body, &skills);
     let agents_target = dir.join("AGENTS.md");
-    if let Err(e) = session.write(&agents_target, agents_md_body.as_bytes(), force) {
+    if let Err(e) = session.write(&agents_target, agents_md_body.as_bytes(), backup_existing) {
         session.rollback();
         return Err(e);
     }
@@ -66,10 +73,10 @@ pub fn run(dir_arg: &str, force: bool, addons_list: &[String]) -> Result<()> {
     // Phase 4: install log
     let log_target = dir.join(".trae/.superpowers-install.log");
     let log_body = render_install_log(session.commit_actions_view());
-    let _ = fs::create_dir_all(log_target.parent().unwrap());
-    let _ = fs::write(&log_target, log_body);
+    let _ = std::fs::create_dir_all(log_target.parent().unwrap());
+    let _ = std::fs::write(&log_target, log_body);
 
-    print_success(&dir, skills.len());
+    print_success(dir, skills.len());
     Ok(())
 }
 
