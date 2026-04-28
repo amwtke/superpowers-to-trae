@@ -1,0 +1,6 @@
+Claude Code
+hookSpecificOutput
+hookEventName
+CLAUDE_PLUGIN_ROOT
+COPILOT_CLI
+CURSOR_PLUGIN_ROOT
