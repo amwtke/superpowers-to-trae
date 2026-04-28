@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 静态校验 dist/：frontmatter / 引用 / 黑名单 / size 预算 / mappings 覆盖率。
+# 静态校验 dist/：frontmatter / 黑名单 / size 预算 / mappings 覆盖率 / 结构一致性。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -8,6 +8,12 @@ BLACKLIST="$ROOT/tests/forbidden-strings.txt"
 
 fail=0
 warn=0
+
+if [[ ! -d "$DIST" ]]; then
+    echo "FAIL: dist/ directory not found at $DIST"
+    echo "Run scripts/build.sh first."
+    exit 1
+fi
 
 # 1. Frontmatter 完整性：每个 SKILL.md 都要有非空 name 和 description
 echo "[1/5] Frontmatter completeness ..."
