@@ -34,6 +34,11 @@ def copy_and_transform_skills(upstream: pathlib.Path, dist_skills: pathlib.Path,
             continue
         target = dist_skills / skill_dir.name
         shutil.copytree(skill_dir, target)
+        # Drop alternate-platform reference docs — Trae users only need trae-tools.md.
+        for alt in ("copilot-tools.md", "codex-tools.md", "gemini-tools.md"):
+            alt_path = target / "references" / alt
+            if alt_path.exists():
+                alt_path.unlink()
         for md in target.rglob("*.md"):
             transform.apply_to_file(md, mappings)
         fm = render.parse_skill_frontmatter(target / "SKILL.md")

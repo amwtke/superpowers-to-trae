@@ -7,6 +7,7 @@
     "WebFetch": "<TBD-Trae-WebFetch>"
   },
   "phrase_replacements": [
+    { "from": "Non-CC platforms: see `references/copilot-tools.md` (Copilot CLI), `references/codex-tools.md` (Codex) for tool equivalents.", "to": "Trae users: see `references/trae-tools.md` for tool equivalents." },
     { "from": "Claude Code", "to": "Trae IDE" },
     { "from": "use the Skill tool to invoke", "to": "read the SKILL.md file directly" },
     { "from": "Use the Skill tool to invoke", "to": "Read the SKILL.md file directly" },
@@ -16,19 +17,6 @@
     { "from": "hookSpecificOutput", "to": "rules-bootstrap" },
     { "from": "hookEventName", "to": "rule-event" },
     { "from": "CLAUDE_PLUGIN_ROOT", "to": "TRAE_PLUGIN_ROOT"}
-  ],
-  "files_to_skip": [
-    "hooks",
-    "scripts",
-    "tests",
-    "package.json",
-    "AGENTS.md",
-    "CLAUDE.md",
-    "GEMINI.md",
-    "gemini-extension.json",
-    "RELEASE-NOTES.md",
-    "CODE_OF_CONDUCT.md",
-    "LICENSE"
   ],
   "agents_to_generate": [
     { "name": "brainstorm",   "skill": "brainstorming" },

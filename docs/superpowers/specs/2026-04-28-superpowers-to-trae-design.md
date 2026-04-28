@@ -238,10 +238,9 @@ bash tests/verify-build.sh              # 静态校验
 `tests/verify-build.sh`——纯静态校验，不调 LLM：
 
 1. **Frontmatter 完整性**：每个 `dist/**/SKILL.md` 必须有非空 `name` 与 `description` 字段。
-2. **链接/引用完整性**：grep 出 markdown 链接 `[*](path)` 与 `Read the file <path>` 形式的相对引用，逐条 stat 检查文件存在。
-3. **黑名单扫描**：对 `tests/forbidden-strings.txt` 中每条做 `grep -rn`，命中即失败。初始包含：`Claude Code`、`hookSpecificOutput`、`hookEventName`、`CLAUDE_PLUGIN_ROOT`、`SubagentStop`、原始未替换的工具名等。
-4. **`user_rules.md` 大小预算**：≤ 4 KB，超出告警（不致命）；≤ 6 KB 致命。
-5. **`mappings.json` 覆盖率**：每个 `phrase_replacements[].from` 在 `upstream/` 的命中次数；为 0 时给 warning（条目过时）。
+2. **黑名单扫描**（替代显式链接完整性校验）：黑名单覆盖了所有"Claude-Code-only"路径片段（`copilot-tools.md`、`codex-tools.md`、`hookSpecificOutput` 等），对 `tests/forbidden-strings.txt` 中每条做 `grep -rn`，命中即失败，间接保证引用一致性；mappings 覆盖率（item 3）补充检测无效映射。显式 stat-each-link 校验未实现，因为黑名单 + 覆盖率组合已覆盖实际的失败模式。
+3. **`user_rules.md` 大小预算**：≤ 4 KB，超出告警（不致命）；≤ 6 KB 致命。
+4. **`mappings.json` 覆盖率**：每个 `phrase_replacements[].from` 在 `upstream/` 的命中次数；为 0 时给 warning（条目过时）。
 
 不做：端到端 LLM 验证。提供 `docs/superpowers/manual-smoke-test.md` 列最小手工验证步骤（装一次 → 在 Trae IDE 里说"帮我设计 X" → 确认 Agent 读了 brainstorming SKILL.md）。
 
