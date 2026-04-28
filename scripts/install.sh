@@ -3,7 +3,8 @@
 # 策略：覆盖 + 自动备份 .bak.YYYYMMDD-HHMMSS；写日志便于回滚。
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 usage() {
     cat <<EOF
@@ -24,6 +25,7 @@ while [[ $# -gt 0 ]]; do
             mode="project"
             project_path="${2:-}"
             [[ -z "$project_path" ]] && { echo "ERROR: --project needs a path" >&2; usage 1; }
+            [[ "$project_path" == --* ]] && { echo "ERROR: --project needs a path, not a flag: $project_path" >&2; usage 1; }
             shift 2;;
         --help|-h) usage 0;;
         *) echo "ERROR: unknown arg: $1" >&2; usage 1;;
