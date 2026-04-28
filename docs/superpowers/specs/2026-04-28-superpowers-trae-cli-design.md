@@ -12,13 +12,16 @@
 
 但末端 `install.sh` 的真机实测暴露了三个痛点：
 
-1. **`--user` 模式无效**：Trae IDE 的 Personal Rules 与 Custom Agents 都不在文件系统（个人规则在 UI 输入，Custom Agents 在服务端账号绑定），写到 `~/.trae/` 的内容被 Trae 完全忽略。
-2. **用户体验割裂**：`bash scripts/install.sh --project <path>` 写完文件后还要用户回到 superpowers-trae 仓库查 `docs/superpowers/trae-agents-setup.md` 创建 4 个 Custom Agent。一键安装的承诺没兑现。
-3. **缺独立可分发二进制**：当前需要 clone 整个仓库才能跑 `install.sh`。给同事或换机器都要带上 200MB+ 的 `upstream/` 副本。
+1. **`--user` 模式无效**：Trae IDE 的 Personal Rules 在 UI 输入、不在文件系统，写到 `~/.trae/` 的 user_rules.md 被 Trae 完全忽略。Custom Agents 在服务端账号绑定（SQLite 只缓存 `currentAgentData_<user_id>`，143 key 全扫无 agent list），脚本无法批量装，必须 UI 创建。
+2. **缺独立可分发二进制**：当前需要 clone 整个仓库才能跑 `install.sh`。给同事或换机器都要带上 200MB+ 的 `upstream/` 副本。
 
-参考项目 `~/workshop/ddd-run`（Rust + clap，3 个 ddd skill 嵌入到二进制里）证明 Rust CLI + 编译时嵌入是该问题的最佳解。
+**关键行为发现**（实测）：Trae 内置 **Builder Agent** 在用户提示词里出现"**superpowers**"触发词时，会主动 Read `.trae/rules/project_rules.md` + 相关 SKILL.md（实测 Read 了 6 个文件）然后按 brainstorming/writing-plans/test-driven-development 等 skill 流程执行；不出现触发词则默认 helpful-bot 直接给方案。
 
-本设计实现 `superpowers-trae` Rust CLI v0.1.0：用户两条路径任选其一拿到 binary（`cargo install` 或预编译 release），在目标项目跑 `superpowers-trae init` 即可一键完成所有 file-based 安装并打印剩余的 4-agent 手工创建指南。
+这意味着：**file-based 安装就足够让方法论上线**（项目 rules + skills + AGENTS.md），用户只需在提示词里说"使用 superpowers ..."。**Custom Agents 不再是必需**——它是可选便利（`@brainstorm` 直触发，省"superpowers"一词）；想用的人参 `docs/superpowers/trae-agents-setup.md` 在 Trae UI 手动创建即可，不进 CLI 流程。
+
+参考项目 `~/workshop/ddd-run`（Rust + clap，3 个 ddd skill 嵌入到二进制里）证明 Rust CLI + 编译时嵌入是分发痛点的最佳解。
+
+本设计实现 `superpowers-trae` Rust CLI v0.1.0：用户两条路径任选其一拿到 binary（`cargo install` 或预编译 release），在目标项目跑 `superpowers-trae init` 即可一键完成所有 file-based 安装。Custom Agents 创建保持可选 + 仓库内文档支持（不进 CLI）。
 
 ## 2. 目标与非目标
 
@@ -29,10 +32,9 @@
 3. `init` 一键写入：
    - `<dir>/.trae/rules/project_rules.md`
    - `<dir>/.trae/skills/superpowers/<14 个 skill 子目录>/...`
-   - `<dir>/AGENTS.md`（动态生成：DIRECTIVE 强约束头 + project_rules.md 冗余）
-   - `<dir>/docs/superpowers/trae-agents-setup.md`
+   - `<dir>/AGENTS.md`（动态生成：DIRECTIVE 强约束头 + skill index + project_rules.md 冗余）
    - `<dir>/.trae/.superpowers-install.log`
-4. `init` 末尾通过 per-user marker（`~/.config/superpowers-trae/state.json`）控制是否打印完整 4-agent 创建指南。
+4. `init` 末尾打印简短成功消息 + 调用方式提示（说"使用 superpowers"触发；可选地参 repo 文档创建 Custom Agent）。
 5. `upgrade` 默认备份 + 覆盖；`--no-backup` 跳过备份。
 6. `status` 列出安装状态、彩色 OK/MISSING 标记、退出码反映状态。
 7. `--addons ddd` flag 在 `init` / `upgrade` 上**仅占位**：打印 "not yet implemented" 后继续。未知 addon 名字直接报错退出 1。
@@ -44,7 +46,8 @@
 
 - DDD plugin 真实实现（v0.1.0 仅占位）
 - Windows 支持
-- 写 Trae 服务端 Custom Agent（不可能——服务端 API 不公开）
+- 写 Trae 服务端 Custom Agent（不可能——服务端 API 不公开；保留为可选手工步骤，仅在 repo 文档里说明）
+- per-user marker / `agents_acknowledged` 状态追踪（已被关键发现简化掉：file-based 安装自足，无需追踪 Agent 创建状态）
 - 包管理器分发（homebrew / apt / aur 等）
 - `update-superpowers` 子命令（让 binary 自己拉新版 upstream，超 v1 范围）
 - Trae 之外的 IDE（Cursor / Copilot CLI）支持
@@ -66,9 +69,8 @@ cc-superpower-to-trae/                            # 仓库根
 │   └── src/
 │       ├── main.rs                               # clap 入口 + 命令分发
 │       ├── lib.rs                                # 公共：log printer / paths
-│       ├── embed.rs                              # include_dir! / include_str! 集中点
-│       ├── state.rs                              # ~/.config/superpowers-trae/state.json 读写
-│       ├── agents_guide.rs                       # 4-agent 指南打印（marker 控制）
+│       ├── embed.rs                              # include_dir! 集中点
+│       ├── agents_md.rs                          # 动态拼接 AGENTS.md（DIRECTIVE 头 + skill index + project_rules.md 正文）
 │       ├── addons/
 │       │   └── mod.rs                            # Addon trait（v1 占位）
 │       └── commands/
@@ -79,7 +81,7 @@ cc-superpower-to-trae/                            # 仓库根
 ├── docs/superpowers/
 │   ├── specs/2026-04-28-superpowers-trae-cli-design.md  # ← 本文档
 │   ├── plans/2026-04-28-superpowers-trae-cli.md         # writing-plans 阶段产出
-│   ├── trae-agents-setup.md                             # 现有 → 同时被 init 拷贝到目标项目
+│   ├── trae-agents-setup.md                             # 仓库内可选参考（用户自助，CLI 不再写入目标项目）
 │   └── manual-smoke-test.md
 ├── tests/                                        # python 测试不动
 │   ├── test_transform.py / test_render.py        # 5 + 7 测试
@@ -104,11 +106,10 @@ end-user flow:
 ```
 cargo install --git ... 或下 release tar.gz   →  ~/.cargo/bin 或 PATH 任意位置
 cd <my-project>
-superpowers-trae init                           →  写 .trae/* + AGENTS.md + 指南副本
-                                                   末尾贴 4-agent 创建指南（首次）
-                                                   或简短 "已确认" 提示（marker=true）
-                                                # 用户在 Trae UI 创建完 4 Agent 后：
-superpowers-trae status --acknowledge-agents    →  marker 写 true，下次 init/upgrade 不重打印指南
+superpowers-trae init                           →  写 .trae/* + AGENTS.md
+                                                   末尾打印一行成功 + 调用方式提示
+                                                # 用户回 Trae IDE，提示词里写 "使用 superpowers ..."
+                                                # 即可触发 Builder 加载 rules + skills 流程
 superpowers-trae upgrade                        →  备份 + 覆盖（升级到新版 binary 嵌入的 superpowers）
 superpowers-trae status                         →  彩色检查报告
 ```
@@ -117,10 +118,9 @@ superpowers-trae status                         →  彩色检查报告
 
 - `cli/` 是 Cargo 项目根；和现有 python 文件互不干扰
 - `include_dir!("$CARGO_MANIFEST_DIR/../dist/user")` 编译时把整棵 dist 树打进 binary（约 4-6 MB 最终大小）
-- AGENTS.md 不是静态嵌入，而是 binary 在 init 时**动态拼接**：DIRECTIVE 强约束头 + 复制 project_rules.md 正文（双保险）
-- `docs/superpowers/trae-agents-setup.md` 用 `include_str!` 单文件嵌入，init 时拷到目标项目
-- per-user marker `~/.config/superpowers-trae/state.json` 决定是否打印完整 4-agent 指南（默认首次完整、确认后简短）。schema 极简：`{"agents_acknowledged": <bool>, "version_first_seen": "<semver>"}`，未知字段忽略，向前兼容
-- maintainer pipeline（python/shell）保留——Rust 只做"读模板 → 写到目标 → 打印指引"
+- AGENTS.md 不是静态嵌入，而是 binary 在 init 时**动态拼接**：DIRECTIVE 强约束头 + 14 行 Skill Index + project_rules.md 正文复制（双保险）
+- file-based 安装路径（rules + skills + AGENTS.md）已经满足"Builder 看到触发词后加载方法论"——CLI 不必处理 Custom Agent 创建状态
+- maintainer pipeline（python/shell）保留——Rust 只做"读模板 → 写到目标 → 打印调用提示"
 
 ## 4. 命令面与行为
 
@@ -133,7 +133,6 @@ superpowers-trae status                         →  彩色检查报告
 | `--dir <path>` | 目标项目根 | `.`（cwd） |
 | `--force` | 已装也写（带备份） | false |
 | `--addons <name>...` | 启用 plugin（v1 仅 `ddd`，但占位）| 空 |
-| `--remind` | 强制打印完整 4-agent 指南，忽略 marker | false |
 
 **预检（按顺序，任一失败即 stderr 报错 + exit ≠ 0）**
 
@@ -146,16 +145,29 @@ superpowers-trae status                         →  彩色检查报告
 1. `<dir>/.trae/rules/project_rules.md` ← `DIST_USER.get_file("rules/user_rules.md")` 的内容（注意源文件名是 user_rules.md，dest 改名为 project_rules.md）
 2. `<dir>/.trae/skills/superpowers/<14 dirs>/...` ← `DIST_USER.get_dir("skills/superpowers")` 整树
 3. `<dir>/AGENTS.md` ← 动态拼接（4.4 节详细）
-4. `<dir>/docs/superpowers/trae-agents-setup.md` ← `AGENTS_SETUP_GUIDE` 静态文本
-5. `<dir>/.trae/.superpowers-install.log` ← 追加每个文件的 `INSTALL: <path>` 行（带时间戳头）
+4. `<dir>/.trae/.superpowers-install.log` ← 追加每个文件的 `INSTALL: <path>` 行（带时间戳头）
 
 `--force` 时：上面每个目标文件已存在 → 先 `mv <file> <file>.bak.<YYYYMMDD-HHMMSS>` 再写入；log 里写 `BACKUP: <bak-path>` 行。
 
-**末尾输出（marker 控制）**
+**末尾输出**
 
-读 `~/.config/superpowers-trae/state.json`：
-- `agents_acknowledged: false` 或文件不存在或 `--remind`：打印**完整 4-agent 创建指南**（embed 进 binary 的 `trae-agents-setup.md` 内容到 stdout）+ 末尾提示 "After creating the 4 agents in Trae UI, run `superpowers-trae status --acknowledge-agents` to silence this guide on future runs."。同时确保 marker 文件存在（写 `agents_acknowledged: false` 作为初始记录）。
-- `agents_acknowledged: true`：只打印一行 `✓ Agents already acknowledged. Run with --remind to show guide again.`
+固定打印一段成功消息 + 调用方式说明（无状态、无 marker、无可选分支）：
+
+```
+✓ Initialized superpowers methodology in <abs-dir>
+  - rules:  .trae/rules/project_rules.md
+  - skills: .trae/skills/superpowers/   (14 skills)
+  - AGENTS: AGENTS.md  (project root, double-insurance)
+
+To invoke methodology in Trae IDE, include "superpowers" in your prompt:
+  "Use superpowers to brainstorm <X>"
+  "Use superpowers to plan <Y>"
+  "Use superpowers to debug <Z>"
+
+Optional: for @-mention shortcuts (@brainstorm / @write-plan / etc.), see
+docs/superpowers/trae-agents-setup.md in the superpowers-trae repo for
+paste-ready Custom Agent prompts.
+```
 
 **`--addons` 处理**
 
@@ -178,10 +190,10 @@ superpowers-trae status                         →  彩色检查报告
 
 **行为**
 
-- 跟 init 相同的 5 项写入清单
+- 跟 init 相同的 4 项写入清单
 - 默认每个目标已存在的文件先备份再写（log 里 `BACKUP:` + `INSTALL:` 行成对）
 - `--no-backup` 跳过 `mv`，直接覆盖
-- **不重打印 4-agent 指南**——升级不需要重新创建 Agent；Custom Agent prompt 里嵌入的是 SKILL.md 文件路径，文件刷新了 Agent 自动用新版
+- 末尾打印成功消息（不复述调用方式提示——升级时用户已经知道）
 
 ### 4.3 `superpowers-trae status [OPTIONS]`
 
@@ -190,8 +202,6 @@ superpowers-trae status                         →  彩色检查报告
 | Flag | 说明 | 默认 |
 |---|---|---|
 | `--dir <path>` | 目标项目根 | `.` |
-| `--acknowledge-agents` | 写 marker `agents_acknowledged: true` | false |
-| `--reset-acknowledgement` | 写 marker `agents_acknowledged: false` | false |
 
 **输出（彩色 OK/MISSING/WARN 标记）**
 
@@ -202,11 +212,7 @@ Project: /home/xiaojin/Documents/trae_projects/test-superpowers
 ✓ project_rules.md         (.trae/rules/project_rules.md, 3.3 KB)
 ✓ superpowers skills       14 / 14 expected
 ✓ AGENTS.md                (project root, 4.1 KB)
-✓ trae-agents-setup.md     (docs/superpowers/)
 ℹ Last init/upgrade        2026-04-28 14:32:01 (from install log)
-
-User-level state (~/.config/superpowers-trae/state.json):
-✓ Agents acknowledged       (run --reset-acknowledgement to clear)
 
 Addons: none
 ```
@@ -250,7 +256,7 @@ For tool name mappings between Claude Code and Trae IDE, see
 
 **为什么不直接静态 include AGENTS.md**：
 
-- 头部 DIRECTIVE 比 project_rules.md 措辞更强（应对 Trae 内置 Builder 不严格遵守 project_rules）
+- 头部 DIRECTIVE 比 project_rules.md 措辞更强（即便用户没说"superpowers"触发词，AGENTS.md 也作为另一加载路径增加方法论被采纳的机会——Trae 设置开关 "将 AGENTS.md 包含在上下文中" 默认开）
 - 后半冗余 project_rules.md 内容确保两个加载点（AGENTS.md / project_rules.md）一致
 - skill index 来自 dist 实时枚举，新增 skill 不需要改 Rust 代码
 
@@ -263,7 +269,6 @@ For tool name mappings between Claude Code and Trae IDE, see
 | 写入失败（权限 / 磁盘满 / 中断） | rollback 已写入文件 + 还原已备份的 `.bak.*` + stderr 错误链 + exit 1 |
 | `<dir>/.trae` 中已有用户的 superpowers 之外内容 | 不冲突字段不动；冲突字段按 init/upgrade 各自语义处理（见上）|
 | `--addons <unknown>` | stderr 报错 + exit 1 |
-| `state.json` 损坏（非 JSON / 字段缺失） | stderr warn + 当作 marker 不存在重建 + 继续 |
 | 嵌入资源损坏（理论上 cargo build 时验证，运行时不应发生） | panic + bug 报告提示 |
 
 **rollback 实现**：`commands::init` 维护一个 `Vec<RollbackAction>`（含 `Created(PathBuf)` / `Backed(PathBuf, PathBuf)`）；任一步 fail 时倒序回滚 + bail anyhow 错。
@@ -277,8 +282,6 @@ For tool name mappings between Claude Code and Trae IDE, see
 use include_dir::{include_dir, Dir};
 
 pub static DIST_USER: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../dist/user");
-pub const AGENTS_SETUP_GUIDE: &str =
-    include_str!("../../docs/superpowers/trae-agents-setup.md");
 ```
 
 - 编译时校验路径存在；漏文件 cargo build 直接挂
@@ -328,11 +331,9 @@ fn write_file_with_rollback(target: PathBuf, bytes: &[u8], rollback: &mut Vec<Ro
 
 `cli/src/` 各模块的纯逻辑（不写盘）：
 
-- `state.rs`：marker 读写、JSON 解析容错
-- `agents_guide.rs`：marker=true/false 分支决策
 - `commands::init` 的预检函数（路径校验，不真写）
 - `parse_skill_frontmatter`（抽 name+description，含无尾换行 + YAML 引号边界）
-- `render_agents_md`（拼 DIRECTIVE 头 + skill index + project_rules 正文）
+- `agents_md::render`（拼 DIRECTIVE 头 + skill index + project_rules 正文）
 
 ### 6.2 Rust 集成测试（`cli/tests/`）
 
@@ -368,10 +369,10 @@ fn addons_ddd_prints_stub_warning_and_exits_zero() { ... }
 fn addons_unknown_errors_exit_1() { ... }
 
 #[test]
-fn marker_acknowledge_then_init_skips_long_guide() { ... }
+fn init_end_output_mentions_superpowers_trigger_word() { ... }
 ```
 
-dev-dependencies：`assert_cmd`、`predicates`、`tempfile`、`serde_json`（marker 验证）。
+dev-dependencies：`assert_cmd`、`predicates`、`tempfile`。
 
 ### 6.3 端到端冒烟（Makefile）
 
@@ -545,19 +546,18 @@ strip = true
   - `.trae/rules/project_rules.md` 内容跟 `dist/user/rules/user_rules.md` 一致
   - `.trae/skills/superpowers/` 下 14 个 skill 子目录齐全
   - `AGENTS.md` 头部含 "AGENTS DIRECTIVE" + 14 行 Skill Index + project_rules.md 正文复制
-  - `docs/superpowers/trae-agents-setup.md` 跟仓库中同名文件一致
-  - 末尾打印完整 4-agent 指南
-- `superpowers-trae status --acknowledge-agents` 后再跑 `init --force --dir <new>`，末尾只打印简短确认
+  - 末尾打印成功消息 + "use superpowers ..." 调用方式提示
 - `upgrade` 跑后 `.bak.<时间戳>` 文件正确生成；`--no-backup` 不生成
 - `init --addons ddd` 退出码 0 + 打印 stub 提示
 - `init --addons unknown` 退出码 1
-- 真机：在 test-superpowers 项目跑 `superpowers-trae init`，结果跟之前 `bash scripts/install.sh --project ...` 等价；4 个 Custom Agent 已创建情况下，整套 brainstorming → writing-plans → executing-plans → code-reviewer 链路工作正常
+- 真机：在 test-superpowers 项目跑 `superpowers-trae init`，提示词里说"使用 superpowers 创建一个简单的订单管理系统"；预期 Builder Agent 主动 Read project_rules.md + brainstorming SKILL.md 并按 brainstorming 流程逐步问澄清问题（已在 v0 阶段实测验证此机制）
 
 ## 10. 不做（明确边界）
 
 - DDD plugin 真实现（`--addons ddd` 仅 stub；sub-project 2 处理）
 - Windows 支持（v1 三平台限 Linux + macOS）
-- 写 Trae 服务端 Custom Agent（API 不公开；用户必须 UI 手工创建）
+- 写 Trae 服务端 Custom Agent（API 不公开；属可选手工步骤，仅 repo 文档支持）
+- per-user marker 状态追踪（关键发现简化掉了，不需要）
 - 包管理器分发（homebrew / apt / aur 等）
 - "binary 自动从远程拉新版 upstream"——这等价 v2 阶段的"on-demand sync"，超 v1 范围
 - Cursor / Copilot CLI / Codex 等 Trae 之外的 IDE 支持
@@ -568,7 +568,8 @@ strip = true
 |---|---|---|
 | `include_dir!` 嵌入路径在 cargo workspace 下解析问题 | cargo build 失败 | 用 `$CARGO_MANIFEST_DIR/../dist/user` 锚定相对路径；CI 矩阵覆盖 ubuntu + macOS 验证 |
 | GitHub Actions 跑 maintainer pipeline 时无本地 superpowers cache | release workflow 失败 | release 前 maintainer 先在本地 `make all` 并 commit 最新 `dist/`；CI 跳过 sync 步骤直接用仓库内 dist |
-| Trae IDE 升级后 `~/.config/Trae/User/` 路径或 SQLite schema 变 | marker / status 实现失效（不影响 init/upgrade）| marker 走自己的路径 `~/.config/superpowers-trae/`；status 不依赖 Trae 内部存储 |
+| Trae IDE 升级后改变 AGENTS.md / project_rules.md 加载行为 | 方法论触发失效 | project_rules.md + AGENTS.md 双保险互为冗余；`status` 不依赖 Trae 内部存储 |
+| 用户忘了说"使用 superpowers"触发词 | Builder 默认 helpful-bot 模式，不进入方法论流程 | `init` 末尾打印调用方式提示；AGENTS.md 头部 DIRECTIVE 强约束作为补救路径 |
 | binary 体积过大（>10 MB） | 用户下载体感差 | release profile + strip + lto 已开；如仍大可考虑 gzip 压缩资源在 binary 内运行时解压 |
 | Trae IDE 改 AGENTS.md 加载行为或废弃此约定 | 双保险失效 | 文档显式说明这是 best-effort；project_rules.md 仍是基础保障 |
 
