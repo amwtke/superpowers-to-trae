@@ -10,15 +10,27 @@ pub enum RollbackAction {
     Backed { original: PathBuf, backup: PathBuf },
 }
 
+#[derive(Default)]
 pub struct InstallSession {
     actions: Vec<RollbackAction>,
 }
 
 impl InstallSession {
     pub fn new() -> Self {
-        Self { actions: Vec::new() }
+        Self::default()
     }
 
+    /// Write `bytes` to `target`, optionally backing up existing content for rollback.
+    ///
+    /// - If `target` does not exist: writes the file and records a `Created` action.
+    /// - If `target` exists and `backup_existing` is `true`: renames the existing file
+    ///   to `<target>.bak.<timestamp>`, writes new content, and records a `Backed` action.
+    /// - If `target` exists and `backup_existing` is `false`: **overwrites in place**;
+    ///   the original content is **not recoverable via `rollback()`**.
+    ///
+    /// Pass `backup_existing = true` whenever rollback safety on pre-existing files
+    /// matters. Pass `false` only when the caller has confirmed `target` does not exist
+    /// (e.g., after a preflight check).
     pub fn write(&mut self, target: &Path, bytes: &[u8], backup_existing: bool) -> Result<()> {
         if target.exists() {
             if backup_existing {
@@ -60,6 +72,12 @@ impl InstallSession {
         }
     }
 
+    /// Consume this session and return the recorded action log.
+    ///
+    /// Primary use is testing: callers in production code typically don't
+    /// inspect the log on the success path — letting the session drop without
+    /// calling `commit()` or `rollback()` is fine.
+    #[must_use]
     pub fn commit(self) -> Vec<RollbackAction> {
         self.actions
     }
@@ -68,8 +86,7 @@ impl InstallSession {
 fn timestamp() -> String {
     use std::time::{SystemTime, UNIX_EPOCH};
     let secs = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-    // Simple YYYYMMDD-HHMMSS without chrono dep — derive from epoch
-    // Acceptable: just use epoch seconds for uniqueness; readable timestamp not strictly needed.
+    // Epoch seconds — cheap uniqueness without chrono dep. Human-readable format not required.
     format!("{}", secs)
 }
 
