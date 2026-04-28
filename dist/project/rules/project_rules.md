@@ -17,7 +17,7 @@ If no skill matches, proceed with your normal capabilities.
 
 ## Skill Index
 
-- brainstorming — "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
+- brainstorming — You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation.
 - dispatching-parallel-agents — Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies
 - executing-plans — Use when you have a written implementation plan to execute in a separate session with review checkpoints
 - finishing-a-development-branch — Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup

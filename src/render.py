@@ -21,7 +21,11 @@ def parse_skill_frontmatter(path: "str | pathlib.Path") -> dict:
     for line in m.group(1).splitlines():
         if ":" in line:
             k, v = line.split(":", 1)
-            out[k.strip()] = v.strip()
+            value = v.strip()
+            # Strip surrounding double or single quotes (some skill descriptions use quoted YAML).
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+                value = value[1:-1]
+            out[k.strip()] = value
     return out
 
 

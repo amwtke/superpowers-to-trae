@@ -15,7 +15,7 @@ import render
 
 
 def load_mappings(root: pathlib.Path) -> dict:
-    return json.loads((root / "src" / "mappings.json").read_text())
+    return json.loads((root / "src" / "mappings.json").read_text(encoding="utf-8"))
 
 
 def copy_and_transform_skills(upstream: pathlib.Path, dist_skills: pathlib.Path,
@@ -24,6 +24,7 @@ def copy_and_transform_skills(upstream: pathlib.Path, dist_skills: pathlib.Path,
 
     Returns a list of {'name', 'description'} dicts for the bootstrap index.
     """
+    # Defensive: when called standalone (not from main, which already cleaned dist/).
     if dist_skills.exists():
         shutil.rmtree(dist_skills)
     dist_skills.mkdir(parents=True)
@@ -42,18 +43,18 @@ def copy_and_transform_skills(upstream: pathlib.Path, dist_skills: pathlib.Path,
 
 def write_bootstrap_rule(template_path: pathlib.Path, out_path: pathlib.Path,
                         skills_meta: list) -> None:
-    template = template_path.read_text()
+    template = template_path.read_text(encoding="utf-8")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(render.render_template(
         template,
         {"skill_index": render.build_skill_index(skills_meta)},
-    ))
+    ), encoding="utf-8")
 
 
 def write_custom_agents(template_path: pathlib.Path, out_dir: pathlib.Path,
                         agents_to_generate: list, skills_meta: list) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
-    template = template_path.read_text()
+    template = template_path.read_text(encoding="utf-8")
     for agent in agents_to_generate:
         skill_meta = next((s for s in skills_meta if s["name"] == agent["skill"]), None)
         if skill_meta is None:
@@ -63,18 +64,19 @@ def write_custom_agents(template_path: pathlib.Path, out_dir: pathlib.Path,
             "skill": agent["skill"],
             "description": skill_meta["description"],
         })
-        (out_dir / f"{agent['name']}.md").write_text(rendered)
+        (out_dir / f"{agent['name']}.md").write_text(rendered, encoding="utf-8")
 
 
 def transform_code_reviewer(upstream: pathlib.Path, out_dir: pathlib.Path,
-                            mappings: dict) -> None:
+                            mappings: dict) -> bool:
     src = upstream / "agents" / "code-reviewer.md"
     if not src.exists():
-        return
+        return False
     dst = out_dir / "code-reviewer.md"
     out_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy(src, dst)
     transform.apply_to_file(dst, mappings)
+    return True
 
 
 def install_trae_tools_ref(src_ref: pathlib.Path, dist_skills: pathlib.Path) -> None:
@@ -93,7 +95,7 @@ def mirror_user_to_project(user_dir: pathlib.Path, project_dir: pathlib.Path) ->
         user_rules.rename(project_rules)
 
 
-def main(argv):
+def main(argv: list) -> None:
     root = pathlib.Path(argv[1]) if len(argv) > 1 else pathlib.Path.cwd()
     upstream = root / "upstream"
     src = root / "src"
@@ -132,16 +134,19 @@ def main(argv):
     )
 
     # Phase 5: code-reviewer
-    transform_code_reviewer(upstream, dist_user / "agents", mappings)
+    reviewer_written = transform_code_reviewer(upstream, dist_user / "agents", mappings)
 
     # Phase 6: mirror to project
     mirror_user_to_project(dist_user, dist_project)
 
-    print(f"Built {len(skills_meta)} skills, {len(mappings['agents_to_generate']) + 1} agents")
+    agent_count = len(mappings["agents_to_generate"]) + (1 if reviewer_written else 0)
+    print(f"Built {len(skills_meta)} skills, {agent_count} agents")
     print(f"  -> {dist_user}")
     print(f"  -> {dist_project}")
 
 
 if __name__ == "__main__":
-    sys.path.insert(0, str(pathlib.Path(__file__).parent))
+    # Python automatically adds the script's dir to sys.path[0] when invoked
+    # as `python3 src/build_helpers.py`, and build.sh sets PYTHONPATH=src/.
+    # No explicit insert needed.
     main(sys.argv)

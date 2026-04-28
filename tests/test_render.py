@@ -56,6 +56,16 @@ class RenderTests(unittest.TestCase):
         self.assertEqual(fm["name"], "tail")
         self.assertEqual(fm["description"], "no newline")
 
+    def test_parse_skill_frontmatter_strips_yaml_quotes_from_values(self):
+        # The brainstorming skill uses description: "You MUST..." — quoted YAML.
+        # The parser should strip the surrounding double-quotes.
+        content = '---\nname: foo\ndescription: "Use when X happens"\n---\n'
+        with tempfile.TemporaryDirectory() as td:
+            p = pathlib.Path(td) / "SKILL.md"
+            p.write_text(content)
+            fm = render.parse_skill_frontmatter(p)
+        self.assertEqual(fm["description"], "Use when X happens")
+
 
 if __name__ == "__main__":
     unittest.main()
