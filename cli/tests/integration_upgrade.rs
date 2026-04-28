@@ -56,14 +56,27 @@ fn upgrade_no_backup_skips_backup() {
         .assert()
         .success();
 
+    // Pre-modify a file so we can verify upgrade actually overwrote it
+    // (otherwise the test could pass for the wrong reason — embedded content
+    // would equal installed content and skip would be a no-op anyway).
+    let target = tmp.path().join(".trae/skills/superpowers/brainstorming/SKILL.md");
+    fs::write(&target, "USER MODIFIED").unwrap();
+
     cli()
         .args(["upgrade", "--dir", tmp.path().to_str().unwrap(), "--no-backup"])
         .assert()
         .success();
 
-    // No .bak.* files should exist anywhere
+    // (a) No .bak.* files anywhere — --no-backup suppressed backup creation
     let bak_count = walkdir_count_baks(tmp.path());
-    assert_eq!(bak_count, 0);
+    assert_eq!(bak_count, 0, "expected zero .bak.* files with --no-backup");
+
+    // (b) The pre-modified file has been overwritten with embedded content
+    assert_ne!(
+        fs::read_to_string(&target).unwrap(),
+        "USER MODIFIED",
+        "expected upgrade to overwrite user modification"
+    );
 }
 
 fn walkdir_count_baks(root: &std::path::Path) -> usize {
