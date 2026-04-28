@@ -6,7 +6,10 @@ use std::path::{Path, PathBuf};
 
 pub fn run(dir_arg: &str, no_backup: bool, addons_list: &[String]) -> Result<()> {
     addons::handle_addons(addons_list)?;
-    let dir = PathBuf::from(dir_arg).canonicalize()?;
+    let dir = PathBuf::from(dir_arg).canonicalize().or_else(|_| {
+        // Non-existent path: fall back to as-is so preflight produces a clear error.
+        Ok::<PathBuf, anyhow::Error>(PathBuf::from(dir_arg))
+    })?;
     preflight(&dir)?;
 
     // upgrade reuses the init main flow with `force=true` semantics:
