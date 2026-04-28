@@ -47,7 +47,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
         Commands::Init { dir, force, addons } => {
-            println!("init: dir={} force={} addons={:?}", dir, force, addons);
+            commands::init::run(&dir, force, &addons)?;
         }
         Commands::Upgrade { dir, no_backup, addons } => {
             println!("upgrade: dir={} no_backup={} addons={:?}", dir, no_backup, addons);

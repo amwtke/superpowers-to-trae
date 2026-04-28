@@ -81,6 +81,13 @@ impl InstallSession {
     pub fn commit(self) -> Vec<RollbackAction> {
         self.actions
     }
+
+    /// Return a read-only view of the recorded actions without consuming the session.
+    ///
+    /// Intended for logging on the success path before the session is dropped.
+    pub fn commit_actions_view(&self) -> &[RollbackAction] {
+        &self.actions
+    }
 }
 
 fn timestamp() -> String {
