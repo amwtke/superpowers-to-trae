@@ -1,0 +1,38 @@
+{
+  "tool_name_replacements": {
+    "TaskCreate": "<TBD-Trae-TaskCreate>",
+    "TaskUpdate": "<TBD-Trae-TaskUpdate>",
+    "TaskList": "<TBD-Trae-TaskList>",
+    "WebSearch": "<TBD-Trae-WebSearch>",
+    "WebFetch": "<TBD-Trae-WebFetch>"
+  },
+  "phrase_replacements": [
+    { "from": "Claude Code", "to": "Trae IDE" },
+    { "from": "use the Skill tool to invoke", "to": "read the SKILL.md file directly" },
+    { "from": "Use the Skill tool to invoke", "to": "Read the SKILL.md file directly" },
+    { "from": "the Skill tool", "to": "Read on the SKILL.md file" },
+    { "from": "references/copilot-tools.md", "to": "references/trae-tools.md" },
+    { "from": "references/codex-tools.md", "to": "references/trae-tools.md" },
+    { "from": "hookSpecificOutput", "to": "rules-bootstrap" },
+    { "from": "hookEventName", "to": "rule-event" },
+    { "from": "CLAUDE_PLUGIN_ROOT", "to": "TRAE_PLUGIN_ROOT"}
+  ],
+  "files_to_skip": [
+    "hooks",
+    "scripts",
+    "tests",
+    "package.json",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "gemini-extension.json",
+    "RELEASE-NOTES.md",
+    "CODE_OF_CONDUCT.md",
+    "LICENSE"
+  ],
+  "agents_to_generate": [
+    { "name": "brainstorm",   "skill": "brainstorming" },
+    { "name": "write-plan",   "skill": "writing-plans" },
+    { "name": "execute-plan", "skill": "executing-plans" }
+  ]
+}
