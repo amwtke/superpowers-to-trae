@@ -1,2 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Backup files from install.sh
+*.bak.*
+
+# Local install logs
+.superpowers-install.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
 # Worktrees
 .worktrees/
