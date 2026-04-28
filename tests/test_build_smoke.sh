@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TMP=$(mktemp -d)
-trap "rm -rf $TMP" EXIT
+trap 'rm -rf "$TMP"' EXIT
 
 # 复制项目骨架到 tmp（不含 upstream/，避免污染）
 mkdir -p "$TMP/src" "$TMP/upstream" "$TMP/dist"
@@ -31,6 +31,7 @@ assert_grep() { grep -q "$1" "$2" || { echo "GREP FAIL '$1' in $2"; exit 1; }; }
 
 assert_file "$TMP/dist/user/rules/user_rules.md"
 assert_file "$TMP/dist/project/rules/project_rules.md"
+assert_file "$TMP/dist/project/skills/superpowers/fake-alpha/SKILL.md"
 assert_file "$TMP/dist/user/skills/superpowers/fake-alpha/SKILL.md"
 assert_file "$TMP/dist/user/skills/superpowers/fake-beta/SKILL.md"
 assert_file "$TMP/dist/user/skills/superpowers/references/trae-tools.md"
@@ -42,6 +43,12 @@ assert_grep "Trae IDE"  "$TMP/dist/user/skills/superpowers/fake-alpha/SKILL.md"
 ! grep -q "Claude Code" "$TMP/dist/user/skills/superpowers/fake-alpha/SKILL.md"
 assert_grep "trae-tools.md" "$TMP/dist/user/skills/superpowers/fake-alpha/SKILL.md"
 ! grep -q "copilot-tools.md" "$TMP/dist/user/skills/superpowers/fake-alpha/SKILL.md"
+# Phrase replacement: hookSpecificOutput → rules-bootstrap
+assert_grep "rules-bootstrap"        "$TMP/dist/user/skills/superpowers/fake-alpha/SKILL.md"
+! grep -q "hookSpecificOutput"       "$TMP/dist/user/skills/superpowers/fake-alpha/SKILL.md"
+# Tool name replacement: TaskCreate → <TBD-Trae-TaskCreate>
+assert_grep "<TBD-Trae-TaskCreate>"  "$TMP/dist/user/skills/superpowers/fake-alpha/SKILL.md"
+! grep -q "\bTaskCreate\b"           "$TMP/dist/user/skills/superpowers/fake-alpha/SKILL.md"
 
 # bootstrap 索引应含两个 fake skill
 assert_grep "fake-alpha" "$TMP/dist/user/rules/user_rules.md"
