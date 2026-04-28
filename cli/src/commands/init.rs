@@ -69,7 +69,7 @@ pub fn run(dir_arg: &str, force: bool, addons_list: &[String]) -> Result<()> {
     let _ = fs::create_dir_all(log_target.parent().unwrap());
     let _ = fs::write(&log_target, log_body);
 
-    print_success(&dir);
+    print_success(&dir, skills.len());
     Ok(())
 }
 
@@ -123,12 +123,12 @@ fn render_install_log(_actions: &[rollback::RollbackAction]) -> String {
     format!("# install run at epoch {}\n", now)
 }
 
-fn print_success(dir: &Path) {
+fn print_success(dir: &Path, skill_count: usize) {
     use colored::Colorize;
     println!();
     println!("{} Initialized superpowers methodology in {}", "✓".green().bold(), dir.display());
     println!("  - rules:  .trae/rules/project_rules.md");
-    println!("  - skills: .trae/skills/superpowers/   (14 skills)");
+    println!("  - skills: .trae/skills/superpowers/   ({} skills)", skill_count);
     println!("  - AGENTS: AGENTS.md  (project root, double-insurance)");
     println!();
     println!("To invoke methodology in Trae IDE, include \"superpowers\" in your prompt:");
