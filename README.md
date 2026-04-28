@@ -16,11 +16,11 @@
 **从源码（需要 Rust 1.75+）：**
 
 ```bash
-cargo install --git https://github.com/amwtke/cc-superpower-to-trae \
+cargo install --git https://github.com/amwtke/superpowers-to-trae \
   --tag v0.1.0 superpowers-trae
 ```
 
-**预编译二进制：** 在 [Releases](https://github.com/amwtke/cc-superpower-to-trae/releases) 选对应平台 tar.gz 解压到 PATH 上（Linux x86_64 / macOS Apple Silicon / macOS Intel）。
+**预编译二进制：** 在 [Releases](https://github.com/amwtke/superpowers-to-trae/releases) 选对应平台 tar.gz 解压到 PATH 上（Linux x86_64 / macOS Apple Silicon / macOS Intel）。
 
 ### 2. 在你的项目里 init
 

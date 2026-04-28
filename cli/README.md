@@ -5,11 +5,11 @@ One-shot installer for the [Superpowers](https://github.com/obra/superpowers) me
 ## Install
 
 ```bash
-cargo install --git https://github.com/amwtke/cc-superpower-to-trae \
+cargo install --git https://github.com/amwtke/superpowers-to-trae \
   --tag v0.1.0 superpowers-trae
 ```
 
-Or download a pre-built binary from [Releases](https://github.com/amwtke/cc-superpower-to-trae/releases).
+Or download a pre-built binary from [Releases](https://github.com/amwtke/superpowers-to-trae/releases).
 
 ## Usage
 

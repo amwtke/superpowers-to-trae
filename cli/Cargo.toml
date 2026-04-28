@@ -6,7 +6,7 @@ authors = ["xiaojin <amwtke@gmail.com>"]
 description = "One-shot installer for the Superpowers methodology in Trae IDE projects"
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/amwtke/cc-superpower-to-trae"
+repository = "https://github.com/amwtke/superpowers-to-trae"
 
 [package.metadata.upstream]
 superpowers_version = "5.0.7"
