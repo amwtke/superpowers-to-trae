@@ -72,6 +72,9 @@ __pycache__/
 .vscode/
 .idea/
 *.swp
+
+# Worktrees
+.worktrees/
 ```
 
 - [ ] **Step 3: 写 README.md 占位**
