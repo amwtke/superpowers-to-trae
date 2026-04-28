@@ -3,6 +3,12 @@
 # 策略：覆盖 + 自动备份 .bak.YYYYMMDD-HHMMSS；写日志便于回滚。
 set -euo pipefail
 
+# DEPRECATED: v0.1+ users should prefer the Rust CLI:
+#   cargo install --git https://github.com/amwtke/cc-superpower-to-trae --tag v0.1.0 superpowers-trae
+#   superpowers-trae init [--dir <path>]
+# This shell script is retained for maintainer / legacy compatibility but will not
+# receive feature updates. See cli/README.md.
+
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 

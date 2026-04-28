@@ -136,9 +136,10 @@ superpowers-trae status                         →  彩色检查报告
 
 **预检（按顺序，任一失败即 stderr 报错 + exit ≠ 0）**
 
-1. `<dir>` 存在且可写（exit 1）
+1. `<dir>` 存在且是目录（exit 1）
 2. `<dir>/.trae/rules/project_rules.md` 不存在（除非 `--force`）—— 已存在时 stderr 提示 "already initialized, use `superpowers-trae upgrade`" + exit 1
-3. `<dir>` 不是只读文件系统（exit 1）
+
+> 注：写权限校验与只读文件系统检测**不在 preflight**——它们由实际的 `fs::write` 错误驱动 + rollback 自动清理已写文件。这避免了 preflight 中重复模拟写盘的复杂性，代价是用户看到的错误是 "Permission denied (os error 13)" 而非更友好的提前 bail。v0.1 接受此取舍。
 
 **写入清单（按顺序）**
 

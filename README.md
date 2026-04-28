@@ -65,6 +65,14 @@ git tag v0.1.x && git push --tags  # 触发 release workflow
 | `tests/` | python 单测 + 端到端 fixture smoke |
 | `docs/superpowers/` | 设计文档、实施计划、手工测试步骤 |
 
+## 旧 shell 脚本（deprecated）
+
+`scripts/install.sh` 是 v0.1 之前的旧安装方式。**v0.1+ 用户应优先使用 Rust CLI** `superpowers-trae init`。shell 脚本被保留用于：
+- maintainer pipeline 内部（python 转换器 / dist 生成）
+- 已经在用旧脚本的项目的渐进迁移
+
+shell 脚本不再获得功能更新。
+
 ## License
 
 本项目仅做工具链与转换器；移植的 superpowers 内容版权归原作者所有，详见 `upstream/LICENSE`。
