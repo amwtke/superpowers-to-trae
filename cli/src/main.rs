@@ -3,6 +3,8 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
+mod embed;
+
 #[derive(Parser, Debug)]
 #[command(name = "superpowers-trae", version, about, long_about = None)]
 struct Cli {
