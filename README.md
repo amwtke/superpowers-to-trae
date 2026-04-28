@@ -6,6 +6,7 @@
 
 - 设计文档：[docs/superpowers/specs/2026-04-28-superpowers-to-trae-design.md](docs/superpowers/specs/2026-04-28-superpowers-to-trae-design.md)
 - 实施计划：[docs/superpowers/plans/2026-04-28-superpowers-to-trae.md](docs/superpowers/plans/2026-04-28-superpowers-to-trae.md)
+- **Trae IDE 自定义 Agent 创建指南**：[docs/superpowers/trae-agents-setup.md](docs/superpowers/trae-agents-setup.md) ← `bash scripts/install.sh` 之后必看，把 4 个 Agent 在 Trae UI 里创建出来
 - 手工冒烟测试：[docs/superpowers/manual-smoke-test.md](docs/superpowers/manual-smoke-test.md)
 
 ## 快速开始
