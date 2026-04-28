@@ -56,6 +56,50 @@ fn strip_quotes(s: &str) -> &str {
     s
 }
 
+/// Render the AGENTS.md content shipped to project root.
+///
+/// Two parts:
+///   1. AGENTS DIRECTIVE header — strong imperative tied to skill loading.
+///   2. Verbatim copy of project_rules.md body (double-insurance redundancy).
+pub fn render_agents_md(project_rules_body: &str, skills: &[Frontmatter]) -> String {
+    let skill_index = skills
+        .iter()
+        .map(|s| format!("- {} — {}", s.name, s.description))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    format!(
+        r#"# AGENTS DIRECTIVE — superpowers methodology
+
+> **Critical**: When the user's request matches a skill's purpose listed below,
+> you MUST `Read` the corresponding SKILL.md file and follow it exactly BEFORE
+> producing any other output (including clarifying questions, exploration, or
+> proposed solutions). Do not paraphrase from memory — skills evolve and the
+> file is the source of truth.
+
+## How to load a skill
+
+1. Identify which skill matches the user's request (see Skill Index below).
+2. Use the `Read` tool on `.trae/skills/superpowers/<skill-name>/SKILL.md`.
+3. Follow that file's checklist verbatim.
+
+## Skill Index
+
+{skill_index}
+
+## Tool name reference
+
+For tool name mappings between Claude Code and Trae IDE, see
+`.trae/skills/superpowers/references/trae-tools.md`.
+
+---
+
+{project_rules_body}"#,
+        skill_index = skill_index,
+        project_rules_body = project_rules_body,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -87,5 +131,33 @@ mod tests {
     fn parse_skill_frontmatter_missing_returns_err() {
         let text = "no frontmatter here\nfoo: bar\n";
         assert!(parse_skill_frontmatter(text).is_err());
+    }
+
+    #[test]
+    fn render_agents_md_includes_directive_header() {
+        let out = render_agents_md("rule body\n", &[]);
+        assert!(out.contains("# AGENTS DIRECTIVE — superpowers methodology"));
+        assert!(out.contains("you MUST `Read`"));
+    }
+
+    #[test]
+    fn render_agents_md_includes_skill_index() {
+        let skills = vec![
+            Frontmatter { name: "alpha".into(), description: "Do alpha".into() },
+            Frontmatter { name: "beta".into(), description: "Do beta".into() },
+        ];
+        let out = render_agents_md("rule body\n", &skills);
+        assert!(out.contains("- alpha — Do alpha"));
+        assert!(out.contains("- beta — Do beta"));
+    }
+
+    #[test]
+    fn render_agents_md_appends_project_rules_body() {
+        let out = render_agents_md("PROJECT RULES BODY\n", &[]);
+        assert!(out.contains("PROJECT RULES BODY"));
+        // Body should appear AFTER the DIRECTIVE section (separated by ---)
+        let directive_pos = out.find("AGENTS DIRECTIVE").unwrap();
+        let body_pos = out.find("PROJECT RULES BODY").unwrap();
+        assert!(directive_pos < body_pos);
     }
 }
