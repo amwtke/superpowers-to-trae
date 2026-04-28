@@ -1,0 +1,52 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive_suffix: linux-x86_64
+          - target: aarch64-apple-darwin
+            os: macos-14
+            archive_suffix: macos-aarch64
+          - target: x86_64-apple-darwin
+            os: macos-13
+            archive_suffix: macos-x86_64
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify dist/user is committed
+        run: |
+          test -f dist/user/rules/user_rules.md || {
+            echo "ERROR: dist/user/ not in repo. Run 'make all' locally and commit before tagging." >&2
+            exit 1
+          }
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: cargo build
+        working-directory: cli
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package
+        run: |
+          ARCHIVE="superpowers-trae-${{ matrix.archive_suffix }}.tar.gz"
+          tar czf "$ARCHIVE" \
+            -C cli/target/${{ matrix.target }}/release superpowers-trae \
+            -C ../../../../ LICENSE README.md
+          echo "ARCHIVE=$ARCHIVE" >> $GITHUB_ENV
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ARCHIVE }}
