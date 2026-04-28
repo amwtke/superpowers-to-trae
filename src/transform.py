@@ -14,7 +14,7 @@ def apply(text: str, mappings: dict) -> str:
     for entry in mappings.get("phrase_replacements", []):
         text = text.replace(entry["from"], entry["to"])
     for tool, replacement in mappings.get("tool_name_replacements", {}).items():
-        text = re.sub(rf"\b{re.escape(tool)}\b", replacement, text)
+        text = re.sub(rf"\b{re.escape(tool)}\b", lambda _: replacement, text)
     return text
 
 

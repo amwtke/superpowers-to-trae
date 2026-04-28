@@ -37,6 +37,17 @@ class TransformTests(unittest.TestCase):
         mappings = {"tool_name_replacements": {"Foo": "Bar"}, "phrase_replacements": []}
         self.assertEqual(transform.apply(text, mappings), text)
 
+    def test_tool_replacement_with_backref_like_string_does_not_crash(self):
+        # Regression: ensure replacement strings containing \1 or \g<x> are
+        # treated as literal text, not as regex backreferences.
+        text = "Use TaskCreate then exit."
+        mappings = {
+            "tool_name_replacements": {"TaskCreate": r"\1foo\g<bar>"},
+            "phrase_replacements": [],
+        }
+        out = transform.apply(text, mappings)
+        self.assertEqual(out, r"Use \1foo\g<bar> then exit.")
+
 
 if __name__ == "__main__":
     unittest.main()
