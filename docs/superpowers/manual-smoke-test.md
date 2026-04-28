@@ -33,7 +33,7 @@ verify-build.sh 仅做静态校验。这份文档列出在 Trae IDE 上的真机
 
 ## 验证 5：卸载（手工）
 
-1. 找到 `<dest>/.trae/.superpowers-install.log` 中所有 `INSTALL:` 行
+1. 找到 `~/.trae/.superpowers-install.log`（用户级）或 `<project>/.trae/.superpowers-install.log`（项目级）中所有 `INSTALL:` 行
 2. 删除对应文件；如有 `BACKUP:` 行，将 `.bak.*` 文件 mv 回原名
 3. **预期**：恢复到安装前状态。
 

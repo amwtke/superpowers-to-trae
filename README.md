@@ -44,7 +44,7 @@ bash scripts/install.sh --user
 bash scripts/install.sh --project /path/to/your/project
 ```
 
-两种方式都会在目标位置已有同名文件时自动备份为 `<file>.bak.YYYYMMDD-HHMMSS`，并写日志到 `<dest>/.trae/.superpowers-install.log`。
+两种方式都会在目标位置已有同名文件时自动备份为 `<file>.bak.YYYYMMDD-HHMMSS`，并写日志到 `~/.trae/.superpowers-install.log`（用户级）或 `<project>/.trae/.superpowers-install.log`（项目级）。
 
 ## 升级流程
 
@@ -66,7 +66,7 @@ git diff dist/                    # review 转换后产物的变化
 | 路径 | 说明 |
 |---|---|
 | `upstream/` | superpowers 原版源（入 git，便于 diff 升级） |
-| `src/` | 转换知识：mappings.json + 模板 + transform.py / render.py |
+| `src/` | 转换知识：mappings.json + 模板 + transform.py / render.py / build_helpers.py |
 | `scripts/` | sync-upstream.sh / build.sh / install.sh |
 | `dist/` | 构建产物（入 git） |
 | `tests/` | 单测 + 端到端 fixture smoke |
