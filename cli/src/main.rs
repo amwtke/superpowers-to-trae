@@ -6,6 +6,7 @@ use clap::{Parser, Subcommand};
 mod embed;
 mod agents_md;
 mod rollback;
+mod addons;
 
 #[derive(Parser, Debug)]
 #[command(name = "superpowers-trae", version, about, long_about = None)]
