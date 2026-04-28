@@ -3,11 +3,11 @@ import re
 import pathlib
 
 
-_FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
+_FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*(?:\n|$)", re.DOTALL)
 _VAR_RE = re.compile(r"\{\{\s*(\w+)\s*\}\}")
 
 
-def parse_skill_frontmatter(path) -> dict:
+def parse_skill_frontmatter(path: "str | pathlib.Path") -> dict:
     """Read a SKILL.md and return its YAML-ish frontmatter as a dict.
 
     Only supports `key: value` lines (one per line). Sufficient for skills
@@ -25,13 +25,13 @@ def parse_skill_frontmatter(path) -> dict:
     return out
 
 
-def render_template(template: str, vars: dict) -> str:
+def render_template(template: str, context: dict) -> str:
     """Substitute `{{ name }}` placeholders. Raises KeyError on missing keys."""
     def sub(match):
         key = match.group(1)
-        if key not in vars:
+        if key not in context:
             raise KeyError(f"Template variable not provided: {key}")
-        return str(vars[key])
+        return str(context[key])
     return _VAR_RE.sub(sub, template)
 
 

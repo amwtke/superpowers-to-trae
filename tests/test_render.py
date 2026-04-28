@@ -45,6 +45,17 @@ class RenderTests(unittest.TestCase):
         with self.assertRaises(KeyError):
             render.render_template("{{ missing }}", {})
 
+    def test_parse_skill_frontmatter_handles_no_trailing_newline(self):
+        # Regression: a SKILL.md whose closing --- is the last byte (no final \n)
+        # should still parse correctly. Some editors save files this way.
+        content = "---\nname: tail\ndescription: no newline\n---"
+        with tempfile.TemporaryDirectory() as td:
+            p = pathlib.Path(td) / "SKILL.md"
+            p.write_text(content)
+            fm = render.parse_skill_frontmatter(p)
+        self.assertEqual(fm["name"], "tail")
+        self.assertEqual(fm["description"], "no newline")
+
 
 if __name__ == "__main__":
     unittest.main()
