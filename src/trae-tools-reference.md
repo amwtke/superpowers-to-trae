@@ -17,5 +17,6 @@ table when a skill mentions a tool name.
 If a skill references a tool not available in Trae, do the equivalent manually
 (e.g., maintain a markdown todo list when there is no TaskCreate).
 
-> The TBD entries are filled by the porting maintainer after verifying against
-> a running Trae IDE. See `src/mappings.json` `tool_name_replacements`.
+> **Note for maintainers (not consumed by the runtime agent):** The TBD entries
+> are filled by the porting maintainer after verifying against a running Trae
+> IDE. See `src/mappings.json` `tool_name_replacements` in the porting repo.

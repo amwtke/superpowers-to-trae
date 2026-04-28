@@ -21,7 +21,7 @@
 | `upstream/` | superpowers 原版源码副本（由 `sync-upstream.sh` 维护，入 git） |
 | `src/mappings.json` | 转换配置：tool 名映射、phrase 替换、文件跳过清单、agents_to_generate |
 | `src/bootstrap-rule.template.md` | `user_rules.md` / `project_rules.md` 模板，含 `{{ skill_index }}` 占位符 |
-| `src/agent-wrapper.template.md` | Custom Agent 模板，含 `{{ name }}` `{{ skill }}` 占位符 |
+| `src/agent-wrapper.template.md` | Custom Agent 模板，含 `{{ name }}` `{{ description }}` `{{ skill }}` 占位符 |
 | `src/trae-tools-reference.md` | Trae 工具速查（拷到 `dist/.../references/trae-tools.md`） |
 | `src/transform.py` | 字符串替换库：apply_phrase_replacements、apply_tool_replacements |
 | `src/render.py` | 模板渲染库：parse_skill_frontmatter、render_template |
