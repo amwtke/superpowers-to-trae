@@ -4,6 +4,7 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 mod embed;
+mod agents_md;
 
 #[derive(Parser, Debug)]
 #[command(name = "superpowers-trae", version, about, long_about = None)]
