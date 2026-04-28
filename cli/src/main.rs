@@ -53,7 +53,7 @@ fn main() -> Result<()> {
             commands::upgrade::run(&dir, no_backup, &addons)?;
         }
         Commands::Status { dir } => {
-            println!("status: dir={}", dir);
+            commands::status::run(&dir)?;
         }
     }
     Ok(())
