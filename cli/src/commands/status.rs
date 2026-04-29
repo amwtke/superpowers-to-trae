@@ -11,8 +11,11 @@ pub fn run(dir_arg: &str) -> Result<()> {
     let dir = PathBuf::from(dir_arg).canonicalize()?;
 
     let version = env!("CARGO_PKG_VERSION");
-    let upstream_version = "5.0.7"; // matches Cargo.toml [package.metadata.upstream]
-    println!("superpowers-trae v{} (embedded superpowers {})", version, upstream_version);
+    let upstream_version = "5.0.7";
+    println!(
+        "superpowers-trae v{} (embedded superpowers {}, ddd plugin v{})",
+        version, upstream_version, version
+    );
     println!("Project: {}", dir.display());
     println!("─────────────────────────────────────────────────────────");
 
@@ -56,12 +59,52 @@ pub fn run(dir_arg: &str) -> Result<()> {
     }
 
     println!();
-    println!("Addons: none");
+
+    // Addons section
+    check_addons(&dir, &mut all_ok);
 
     if !all_ok {
         anyhow::bail!("status: one or more required files missing");
     }
     Ok(())
+}
+
+fn check_addons(dir: &Path, all_ok: &mut bool) {
+    let ddd_skills_root = dir.join(".trae/skills/ddd");
+    let domain_md = dir.join("DOMAIN.md");
+    let readme = dir.join("README-DDD-HARNESS.md");
+
+    let has_any_ddd = ddd_skills_root.is_dir() || domain_md.exists() || readme.exists();
+    if !has_any_ddd {
+        println!("Addons: none");
+        return;
+    }
+
+    println!("Addons:");
+
+    let ddd_skill_count = count_skill_dirs(&ddd_skills_root);
+    let ddd_complete = ddd_skill_count == 3 && domain_md.exists() && readme.exists();
+
+    if ddd_complete {
+        println!("  {} ddd", "✓".green().bold());
+    } else {
+        println!("  {} ddd (incomplete)", "⚠".yellow().bold());
+        *all_ok = false;
+    }
+
+    println!("    - skills:    {} / 3", ddd_skill_count);
+
+    if domain_md.exists() {
+        println!("    - DOMAIN.md  (project root, user-managed)");
+    } else {
+        println!("    - DOMAIN.md  MISSING (run `superpowers-trae upgrade --addons ddd` to restore template)");
+    }
+
+    if readme.exists() {
+        println!("    - README-DDD-HARNESS.md (project root)");
+    } else {
+        println!("    - README-DDD-HARNESS.md MISSING");
+    }
 }
 
 fn count_skill_dirs(root: &Path) -> usize {
