@@ -52,3 +52,20 @@ fn status_fails_when_skills_partially_missing() {
         .failure()
         .stdout(predicate::str::contains("13 / 14 expected"));
 }
+
+#[test]
+fn status_with_ddd_reports_addon() {
+    let tmp = tempdir().unwrap();
+    cli()
+        .args(["init", "--dir", tmp.path().to_str().unwrap(), "--addons", "ddd"])
+        .assert()
+        .success();
+
+    cli()
+        .args(["status", "--dir", tmp.path().to_str().unwrap()])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Addons:"))
+        .stdout(predicate::str::contains("ddd"))
+        .stdout(predicate::str::contains("3 / 3"));
+}

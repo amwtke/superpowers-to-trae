@@ -6,7 +6,7 @@ One-shot installer for the [Superpowers](https://github.com/obra/superpowers) me
 
 ```bash
 cargo install --git https://github.com/amwtke/superpowers-to-trae \
-  --tag v0.1.0 superpowers-trae
+  --tag v0.2.0 superpowers-trae
 ```
 
 Or download a pre-built binary from [Releases](https://github.com/amwtke/superpowers-to-trae/releases).
@@ -21,6 +21,18 @@ superpowers-trae upgrade                  # refresh to embedded version (with ba
 superpowers-trae upgrade --no-backup      # skip backup
 superpowers-trae status                   # check install state
 ```
+
+## DDD plugin (v0.2+)
+
+Add the DDD methodology harness via `--addons ddd`:
+
+````bash
+superpowers-trae init --addons ddd        # first-time init with DDD
+superpowers-trae upgrade --addons ddd     # add DDD to an already-initialized project
+superpowers-trae status                   # shows "Addons: ddd ✓" when installed
+````
+
+`DOMAIN.md` is install-once: once you start filling it with your domain model, subsequent `upgrade --addons ddd` runs will preserve your content (template never overwrites).
 
 ## Invocation in Trae
 

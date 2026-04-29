@@ -1,0 +1,269 @@
+---
+name: ddd-spec
+description: |
+  触发条件:用户输入 /ddd-spec 加用例名(例如 /ddd-spec 会员兑换积分)。
+  读取项目根目录的 DOMAIN.md,为指定用例生成一份 Superpowers 可直接消化的 spec 文档,
+  严格使用 DOMAIN.md 中的 Ubiquitous Language 术语,包含用例描述、前置/后置条件、
+  业务规则、测试场景(Given-When-Then)和一条明确的"交给 Superpowers 继续"的指令。
+  这个 skill 是 DDD 建模阶段与 Superpowers 实现阶段的**桥梁**。
+  当用户说"生成 spec"、"写用例描述"、"准备给 Superpowers 的输入"、"把这个用例写清楚"
+  时也应触发此技能。
+---
+
+# DDD → Superpowers Spec Bridge Skill
+
+## 触发
+用户使用 `/ddd-spec <用例名>` 命令。前置条件:项目根目录必须存在 `DOMAIN.md`,
+否则提示用户先运行 `/ddd-model`。
+
+## 适用范围:命令 vs 查询
+
+本 skill 处理**两类**用例,自动判断并走不同模板:
+
+- **命令用例**(动词前缀:`Create` / `Add` / `Pay` / `Ship` / `Cancel` / `Replenish` 等)
+  → 改状态、有不变式、需 Given-When-Then 测试 → 走命令模板(见 Step 3A)
+- **查询用例**(动词前缀:`View` / `Browse` / `Find` / `List` / `Get` 等)
+  → 读操作、从 `DOMAIN.md` §6 读模型清单产出 → 走查询模板(见 Step 3B)
+
+**大部分简单查询不需要 spec**(单聚合 `findById` + DTO 映射即可);仅当以下情况才用查询模板:
+- 跨聚合联合(需 Application Service 拼装多个聚合)
+- 分页 / 过滤 / 排序的列表查询
+- 投影 / 独立 Read Model 表(真 CQRS)
+
+## 目标
+把一个**业务用例**转化成一份 Superpowers 可直接消化的 spec 文档,
+这份文档满足三个强约束:
+
+1. **术语锚定**:所有命名必须来自 `DOMAIN.md` 的 Ubiquitous Language 表
+2. **测试友好**:包含 Given-When-Then 场景,Superpowers 可直接转成测试
+3. **边界清晰**:命令 spec 只影响单一聚合;查询 spec 明示是否跨聚合
+
+## 工作流
+
+### Step 1:读入 DOMAIN.md
+提取:
+- Ubiquitous Language 术语表
+- 相关聚合的不变式(Invariants)
+- 相关聚合发出的领域事件
+
+### Step 2:定位用例归属
+判断本用例属于哪个聚合。如果跨聚合,**停下来提醒用户**:
+> ⚠️ 这个用例似乎涉及聚合 A 和聚合 B。根据 DDD 原则,一个 spec 应只影响一个聚合。
+> 建议拆成两个 spec:一个写 A 的本地操作,一个写 B 响应 A 事件的操作。
+
+### Step 3A:命令模板(改状态用例)
+
+**严格按此模板产出**(写入 `docs/specs/spec-<序号>-<slug>.md`):
+
+```markdown
+# Spec: <用例名>
+
+> 本 spec 由 /ddd-spec 生成,所有术语锚定到 DOMAIN.md。
+> 实现阶段交给 Superpowers 的 TDD 流程驱动。
+
+## 归属
+- **聚合**:<AggregateRoot 名>(来自 DOMAIN.md § 3)
+- **分层**:Application Service 编排 + Aggregate 内部实现业务规则
+
+## 用例描述
+<一段自然语言描述,必须只使用 DOMAIN.md 中的术语>
+
+## 参与者
+- <Actor>:<角色>
+
+## 前置条件
+- <用业务语言描述,如"会员账户存在且处于激活状态">
+- ...
+
+## 后置条件(成功路径)
+- <如"积分账户余额减少 N 点,产生 PointRedeemed 事件">
+- ...
+
+## 业务规则(Invariants)
+引用 DOMAIN.md 中该聚合的不变式,并补充本用例特有的规则:
+- **INV-<n>**(来自 DOMAIN.md):<规则>
+- **RULE-本用例-1**:<本用例特有的规则>
+
+## 测试场景(Given-When-Then)
+
+### 场景 1:<成功路径描述>
+- **Given** <初始状态,用 DOMAIN.md 术语>
+- **When** <触发的命令>
+- **Then**
+  - <状态变化>
+  - <产生的领域事件>
+
+### 场景 2:<边界/异常路径>
+- **Given** ...
+- **When** ...
+- **Then** 抛出 `<DomainException>`
+
+### 场景 3:<并发/幂等场景,如适用>
+- ...
+
+## 接口约定(初稿,可被 Superpowers 细化)
+
+### Command
+```java
+// Application Service 层入口
+record <CommandName>(
+    <UbiquitousLanguageType> <field>,
+    ...
+) {}
+```
+
+### 聚合根方法
+```java
+// Aggregate Root 暴露的业务方法
+public <ReturnType> <methodName>(<params>) {
+    // 规则实现;禁止贫血
+}
+```
+
+## 禁止项(Guardrails for Superpowers)
+在实现此 spec 时,Superpowers 必须遵守:
+- ❌ 不得把业务规则写进 Controller 或 Application Service
+- ❌ 不得跨聚合直接调用(跨聚合必须通过领域事件)
+- ❌ 不得修改 `DOMAIN.md` 之外的术语(命名必须一致)
+- ❌ 不得绕过聚合根直接修改内部实体
+- ✅ 必须先写测试(TDD),再写实现
+- ✅ 必须为每个测试场景写一个测试用例
+
+## 交给 Superpowers 的开放问题(技术实施层面)
+
+本 spec **不回答**以下问题,留给 `superpowers:brainstorming` 在进入 `writing-plans` 之前回答,并把决策写回 `CLAUDE.md` 的"## 技术栈约定"段:
+
+- **语言 / 运行时**:Java / Kotlin / Go / Rust / Node / Python / ... ?
+- **应用框架**:Spring Boot / Ktor / Axum / Express / FastAPI / ... ?
+- **持久化**:关系型 / 文档型 / 事件存储 / 内存?schema 由谁生成?
+- **范围**:仅后端服务,还是前后端全栈?若含前端,用什么框架?
+- **对外交互形态**:REST / gRPC / GraphQL / CLI / 消息?
+- **测试框架 / 构建工具**
+- **部署形态**:单体 / 模块化单体 / 微服务?
+- **非功能约束**:并发量级、延迟预算、数据规模?
+
+> 首次进入实现阶段时必答;若 `CLAUDE.md` 的技术栈段已填,则跳过并直接进入 `writing-plans`。
+
+## 下一步
+
+把本 spec 交给 Superpowers 全流程:
+
+1. **`superpowers:brainstorming`**(首次):回答上面"交给 Superpowers 的开放问题",把技术栈 / 范围 / 交互形态决策写回 `CLAUDE.md`
+2. **`superpowers:writing-plans`**:基于 spec + 已确定栈,产出分步实施计划
+3. **`superpowers:executing-plans`** + TDD:先写失败测试 → 最小改动通过 → 重构
+4. **`superpowers:finishing-a-development-branch`**:验证全绿 → 合并/开 PR
+
+执行建议:
+> 请 Superpowers 读取 `docs/specs/spec-<n>-<slug>.md`。若 `CLAUDE.md` 技术栈段未填,先启动 brainstorming 决定技术栈与范围并写回;否则直接进入 writing-plans。
+> 实现过程中如发现 DOMAIN.md 中有不一致或缺失的术语,停下来回到 `/ddd-model` 修正。
+```
+
+### Step 3B:查询模板(读用例,复杂查询才用)
+
+**严格按此模板产出**(写入 `docs/specs/spec-<序号>-<slug>.md`):
+
+```markdown
+# Query Spec: <查询名>
+
+> 本 spec 由 /ddd-spec 生成(查询模板),用于复杂查询(跨聚合 / 投影 / 分页)。
+> 简单单聚合 findById 查询不需要 spec,直接参照 DOMAIN.md §6 实现即可。
+
+## 归属
+- **类型**:**读模型查询**(不改状态,无不变式保护)
+- **实现方式**:<单聚合直查 / 跨聚合联合 / 绕过聚合 SQL / 独立 Read Model 表>(对应 DOMAIN.md §6 实现方式枚举)
+- **涉及聚合 / 表**:<哪些聚合或哪张宽表>
+
+## 用例描述
+<谁会查这个查询,典型场景,一句话说清>
+
+## 输入(Query Params)
+- `<字段>`:<类型,约束>
+- `<可选字段 / 分页 / 排序>`:...
+
+## 输出(DTO)
+```
+<DTO 名称> {
+  <字段>: <类型>
+  <字段>: <类型>
+  ...
+}
+```
+字段含义:
+- `<字段>`:<语义,从哪个聚合来>
+- ...
+
+## 约束
+- **权限**:<谁能查?本人?卖家?运营?>
+- **分页**:<是否分页,默认 size,最大 size>
+- **一致性**:<强一致读聚合 / 允许读到最终一致的 Read Model>
+- **性能期望**:<若有>
+
+## 测试场景
+
+### 场景 1:基本查询
+- **Given** <初始数据:聚合存在 / 表有若干行>
+- **When** 查询 `<Query>(input=...)`
+- **Then** 返回 <DTO 结构与内容>
+
+### 场景 2:空结果
+- **Given** 无匹配数据
+- **When** 查询
+- **Then** 返回空列表 / 404
+
+### 场景 3:<权限 / 跨聚合拼装 / 分页边界 等特有场景>
+- ...
+
+## 接口约定
+
+### REST 端点
+```
+GET /<resource>[/{id}][?param=...]
+Response 200: <DTO>
+Response 404: { error, message }
+```
+
+### 查询入口(Application 层)
+```java
+<QueryService>.<method>(<QueryParams>) -> <DTO>
+```
+
+## 禁止项
+- ❌ 在查询路径里改状态(无副作用)
+- ❌ 查询 DTO 泄露聚合内部可变对象(返回 record / 不可变 VO)
+- ❌ 为了优化绕过聚合时仍然拼装业务规则(规则归写侧)
+- ✅ 查询可以直接 SQL,但 DTO 字段必须在 DOMAIN.md §6 中登记过
+
+## 下一步
+查询实现通常短小(Application Service + DTO + Controller GET 端点),
+不一定需要完整 Superpowers 全流程;可直接实现 + 集成测试验证。
+复杂查询(投影 / 独立 Read Model 表)再走 writing-plans。
+```
+
+### Step 4:回写 DOMAIN.md(仅当必要)
+如果本用例暴露了 DOMAIN.md 中缺失的术语、规则或读模型,**停下来询问用户**是否先更新 DOMAIN.md。
+**不要擅自修改 DOMAIN.md**。
+
+## 与其他 skill 的衔接
+
+```
+  /ddd-storm ──→ docs/ddd/01-event-storming-*.md
+                         ↓
+  /ddd-model ──→ DOMAIN.md(Single Source of Truth)
+                         ↓
+  /ddd-spec  ──→ docs/specs/spec-*.md
+                         ↓
+  Superpowers ─→ 测试 → 实现
+```
+
+## 反模式(必须拒绝)
+
+❌ spec 里出现 DOMAIN.md 之外的新术语(必须先更新 DOMAIN.md)
+❌ 命令 spec 跨多个聚合(必须拆分;Saga 情况在主聚合 spec 标注清楚)
+❌ 只有 happy path,没有异常/边界场景
+❌ Given-When-Then 里使用了技术语言("调用 API"、"写入数据库")而非业务语言
+❌ 为了"就一个 GET 接口"也强行跑 /ddd-spec(简单查询直接实现,别造 spec 垃圾)
+
+## 文件落位
+
+- 产出:`docs/specs/spec-<自增序号>-<slug>.md`
+- 如果目录不存在,先创建

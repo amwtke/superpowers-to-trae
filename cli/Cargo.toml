@@ -1,6 +1,6 @@
 [package]
 name = "superpowers-trae"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["xiaojin <amwtke@gmail.com>"]
 description = "One-shot installer for the Superpowers methodology in Trae IDE projects"
@@ -10,6 +10,7 @@ repository = "https://github.com/amwtke/superpowers-to-trae"
 
 [package.metadata.upstream]
 superpowers_version = "5.0.7"
+ddd_run_version = "8cb30e0"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
