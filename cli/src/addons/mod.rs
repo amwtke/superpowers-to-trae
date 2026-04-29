@@ -9,7 +9,7 @@ use anyhow::{bail, Result};
 use std::path::Path;
 use crate::rollback::InstallSession;
 
-// pub mod ddd;  // re-enabled by Task 4
+pub mod ddd;
 
 pub trait Addon {
     fn name(&self) -> &str;
@@ -36,7 +36,7 @@ pub fn resolve_addons(addons: &[String]) -> Result<Vec<Box<dyn Addon>>> {
     let mut out: Vec<Box<dyn Addon>> = Vec::new();
     for a in addons {
         match a.as_str() {
-            "ddd" => bail!("ddd addon temporarily disabled (Task 4 will populate)"),
+            "ddd" => out.push(Box::new(ddd::DddAddon)),
             other => bail!(
                 "Unknown addon: '{}' (supported in v0.2: 'ddd')",
                 other
@@ -47,22 +47,8 @@ pub fn resolve_addons(addons: &[String]) -> Result<Vec<Box<dyn Addon>>> {
 }
 
 /// Backward-compatible alias for v0.1 callers (drops the addon objects, just validates names).
-/// Retains v0.1 ddd stub behavior (prints informational message, exits zero) until Task 4.
 pub fn handle_addons(addons: &[String]) -> Result<()> {
-    for a in addons {
-        match a.as_str() {
-            "ddd" => {
-                println!("ℹ DDD plugin not yet implemented in v1.");
-                println!("  Scheduled for sub-project 2 (see roadmap).");
-                println!("  Continuing with base superpowers only.");
-            }
-            other => bail!(
-                "Unknown addon: '{}' (supported in v0.2: 'ddd')",
-                other
-            ),
-        }
-    }
-    Ok(())
+    resolve_addons(addons).map(|_| ())
 }
 
 #[cfg(test)]
@@ -75,7 +61,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "re-enabled by Task 4"]
     fn resolve_ddd_returns_one_addon() {
         let addons = resolve_addons(&["ddd".to_string()]).unwrap();
         assert_eq!(addons.len(), 1);
@@ -95,7 +80,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "re-enabled by Task 4"]
     fn handle_addons_alias_works_for_ddd() {
         assert!(handle_addons(&["ddd".to_string()]).is_ok());
     }

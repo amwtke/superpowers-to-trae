@@ -61,16 +61,6 @@ fn init_force_creates_backup() {
 }
 
 #[test]
-fn init_addons_ddd_prints_stub_and_exits_zero() {
-    let tmp = tempdir().unwrap();
-    cli()
-        .args(["init", "--dir", tmp.path().to_str().unwrap(), "--addons", "ddd"])
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("DDD plugin not yet implemented"));
-}
-
-#[test]
 fn init_addons_unknown_errors() {
     let tmp = tempdir().unwrap();
     cli()
