@@ -44,6 +44,35 @@ superpowers-trae init
 
 或可选地参 [docs/superpowers/trae-agents-setup.md](docs/superpowers/trae-agents-setup.md) 在 Trae UI 创建 Custom Agent，用 `@brainstorm` / `@write-plan` / `@code-reviewer` 等 @-mention 调用（无需触发词）。
 
+### 4. （可选）启用 DDD plugin
+
+如果你要用 DDD（领域驱动设计）方法论先建模、再交给 superpowers 实现：
+
+````bash
+# 第一次 init 同时装 DDD
+superpowers-trae init --addons ddd
+
+# 已 init 后追加
+superpowers-trae upgrade --addons ddd
+````
+
+写入额外文件：
+- `.trae/skills/ddd/{ddd-storm,ddd-model,ddd-spec}/SKILL.md` — 3 个 DDD skill
+- `DOMAIN.md` — 领域模型 SSOT（**只在不存在时安装**，后续 upgrade 不会覆盖你的模型）
+- `README-DDD-HARNESS.md` — DDD 工作流向导
+- `AGENTS.md` 末尾追加 "DDD methodology" 元规则段
+
+工作流：
+```
+业务需求 → 使用 ddd-storm <描述>（事件风暴）
+       → 使用 ddd-model（建领域模型，更新 DOMAIN.md）
+       → 使用 ddd-spec <场景>（生成 spec）
+       → 使用 superpowers brainstorming（决定技术栈）
+       → superpowers writing-plans / executing-plans（TDD 实施）
+```
+
+DDD plugin 移植自 [ddd-run](https://github.com/amwtke/ddd-run)。
+
 ## Maintainer 工作流
 
 ```bash
