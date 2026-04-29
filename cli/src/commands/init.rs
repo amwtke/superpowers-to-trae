@@ -63,7 +63,7 @@ pub fn run_with_options(
 
     // Phase 3: AGENTS.md (dynamically rendered)
     let skills = collect_skill_frontmatters()?;
-    let agents_md_body = agents_md::render_agents_md(project_rules_body, &skills);
+    let agents_md_body = agents_md::render_agents_md(project_rules_body, &skills, &[]);
     let agents_target = dir.join("AGENTS.md");
     if let Err(e) = session.write(&agents_target, agents_md_body.as_bytes(), backup_existing) {
         session.rollback();

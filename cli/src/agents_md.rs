@@ -58,17 +58,22 @@ fn strip_quotes(s: &str) -> &str {
 
 /// Render the AGENTS.md content shipped to project root.
 ///
-/// Two parts:
-///   1. AGENTS DIRECTIVE header — strong imperative tied to skill loading.
-///   2. Verbatim copy of project_rules.md body (double-insurance redundancy).
-pub fn render_agents_md(project_rules_body: &str, skills: &[Frontmatter]) -> String {
+/// Three parts:
+///   1. AGENTS DIRECTIVE header (skill-loading instruction).
+///   2. Skill Index + Tool name reference + project_rules body (separated by `---`).
+///   3. Optional addon segments appended at the end (each addon's `agents_md_segment()`).
+pub fn render_agents_md(
+    project_rules_body: &str,
+    skills: &[Frontmatter],
+    addons: &[&dyn crate::addons::Addon],
+) -> String {
     let skill_index = skills
         .iter()
         .map(|s| format!("- {} — {}", s.name, s.description))
         .collect::<Vec<_>>()
         .join("\n");
 
-    format!(
+    let mut out = format!(
         r#"# AGENTS DIRECTIVE — superpowers methodology
 
 > **Critical**: When the user's request matches a skill's purpose listed below,
@@ -97,7 +102,15 @@ For tool name mappings between Claude Code and Trae IDE, see
 {project_rules_body}"#,
         skill_index = skill_index,
         project_rules_body = project_rules_body,
-    )
+    );
+
+    for addon in addons {
+        if let Some(segment) = addon.agents_md_segment() {
+            out.push('\n');
+            out.push_str(segment);
+        }
+    }
+    out
 }
 
 #[cfg(test)]
@@ -135,7 +148,7 @@ mod tests {
 
     #[test]
     fn render_agents_md_includes_directive_header() {
-        let out = render_agents_md("rule body\n", &[]);
+        let out = render_agents_md("rule body\n", &[], &[]);
         assert!(out.contains("# AGENTS DIRECTIVE — superpowers methodology"));
         assert!(out.contains("you MUST `Read`"));
     }
@@ -146,18 +159,50 @@ mod tests {
             Frontmatter { name: "alpha".into(), description: "Do alpha".into() },
             Frontmatter { name: "beta".into(), description: "Do beta".into() },
         ];
-        let out = render_agents_md("rule body\n", &skills);
+        let out = render_agents_md("rule body\n", &skills, &[]);
         assert!(out.contains("- alpha — Do alpha"));
         assert!(out.contains("- beta — Do beta"));
     }
 
     #[test]
     fn render_agents_md_appends_project_rules_body() {
-        let out = render_agents_md("PROJECT RULES BODY\n", &[]);
+        let out = render_agents_md("PROJECT RULES BODY\n", &[], &[]);
         assert!(out.contains("PROJECT RULES BODY"));
         // Body should appear AFTER the DIRECTIVE section (separated by ---)
         let directive_pos = out.find("AGENTS DIRECTIVE").unwrap();
         let body_pos = out.find("PROJECT RULES BODY").unwrap();
         assert!(directive_pos < body_pos);
+    }
+
+    use crate::addons::Addon;
+    use crate::rollback::InstallSession;
+    use std::path::Path;
+
+    struct MockAddon {
+        seg: Option<&'static str>,
+    }
+    impl Addon for MockAddon {
+        fn name(&self) -> &str { "mock" }
+        fn install(&self, _: &Path, _: bool, _: &mut InstallSession) -> anyhow::Result<()> { Ok(()) }
+        fn agents_md_segment(&self) -> Option<&'static str> { self.seg }
+    }
+
+    #[test]
+    fn render_agents_md_appends_addon_segments() {
+        let addon = MockAddon { seg: Some("\n---\n# DDD SEGMENT\n") };
+        let addons: Vec<&dyn Addon> = vec![&addon];
+        let out = render_agents_md("rule body\n", &[], &addons);
+        assert!(out.contains("DDD SEGMENT"));
+    }
+
+    #[test]
+    fn render_agents_md_empty_addons_unchanged() {
+        let no_addons: Vec<&dyn Addon> = vec![];
+        // Self-equality smoke: same call, same output
+        let a = render_agents_md("rule body\n", &[], &no_addons);
+        let b = render_agents_md("rule body\n", &[], &no_addons);
+        assert_eq!(a, b);
+        // Sanity: with empty addons, output should NOT contain any DDD-style segment marker
+        assert!(!a.contains("# DDD"));
     }
 }
