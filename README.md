@@ -17,7 +17,7 @@
 
 ```bash
 cargo install --git https://github.com/amwtke/superpowers-to-trae \
-  --tag v0.1.0 superpowers-trae
+  --tag v0.2.0 superpowers-trae
 ```
 
 **预编译二进制：** 在 [Releases](https://github.com/amwtke/superpowers-to-trae/releases) 选对应平台 tar.gz 解压到 PATH 上（Linux x86_64 / macOS Apple Silicon / macOS Intel）。
