@@ -37,11 +37,11 @@ pub fn run_with_options(
     dir: &Path,
     _force: bool,
     backup_existing: bool,
-    _addons_list: &[String],
+    addons_list: &[String],
 ) -> Result<()> {
     let mut session = rollback::InstallSession::new();
 
-    // Phase 1: install rules/project_rules.md (renamed from user_rules.md in dist)
+    // Phase 1: install rules/project_rules.md
     let rules_src = embed::DIST_USER
         .get_file("rules/user_rules.md")
         .ok_or_else(|| anyhow!("embedded dist missing rules/user_rules.md"))?;
@@ -52,7 +52,7 @@ pub fn run_with_options(
         return Err(e);
     }
 
-    // Phase 2: install skills/ directory recursively
+    // Phase 2: install skills/superpowers/ recursively
     let skills_dir = embed::DIST_USER
         .get_dir("skills/superpowers")
         .ok_or_else(|| anyhow!("embedded dist missing skills/superpowers"))?;
@@ -61,22 +61,32 @@ pub fn run_with_options(
         return Err(e);
     }
 
-    // Phase 3: AGENTS.md (dynamically rendered)
-    let skills = collect_skill_frontmatters()?;
-    let agents_md_body = agents_md::render_agents_md(project_rules_body, &skills, &[]);
+    // Phase 3: install addons (writes addon-specific files like .trae/skills/ddd/, DOMAIN.md, etc.)
+    let addon_list = addons::resolve_addons(addons_list)?;
+    for addon in &addon_list {
+        if let Err(e) = addon.install(dir, backup_existing, &mut session) {
+            session.rollback();
+            return Err(e.context(format!("addon '{}' install failed", addon.name())));
+        }
+    }
+
+    // Phase 4: AGENTS.md (dynamically rendered, including addon segments)
+    let skills_meta = collect_skill_frontmatters()?;
+    let addon_refs: Vec<&dyn addons::Addon> = addon_list.iter().map(|b| b.as_ref()).collect();
+    let agents_md_body = agents_md::render_agents_md(project_rules_body, &skills_meta, &addon_refs);
     let agents_target = dir.join("AGENTS.md");
     if let Err(e) = session.write(&agents_target, agents_md_body.as_bytes(), backup_existing) {
         session.rollback();
         return Err(e);
     }
 
-    // Phase 4: install log
+    // Phase 5: install log
     let log_target = dir.join(".trae/.superpowers-install.log");
     let log_body = render_install_log(session.commit_actions_view());
     let _ = std::fs::create_dir_all(log_target.parent().unwrap());
     let _ = std::fs::write(&log_target, log_body);
 
-    print_success(dir, skills.len());
+    print_success(dir, skills_meta.len());
     Ok(())
 }
 
