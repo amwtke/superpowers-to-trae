@@ -45,11 +45,11 @@ run_case "SUPERPOWERS_INSTALL_DIR override" '
     test -x /tmp/myown/superpowers-trae
 '
 
-# Case 3: SUPERPOWERS_VERSION 锁定旧版本
-run_case "SUPERPOWERS_VERSION=v0.2.0" '
+# Case 3: SUPERPOWERS_VERSION 锁定具体版本（验证 URL 构造路径）
+run_case "SUPERPOWERS_VERSION=v0.2.1" '
     apt-get update -qq && apt-get install -qq -y curl ca-certificates >/dev/null
-    SUPERPOWERS_VERSION=v0.2.0 sh /repo/install.sh
-    "$HOME/.local/bin/superpowers-trae" --version | grep -q "0.2.0"
+    SUPERPOWERS_VERSION=v0.2.1 sh /repo/install.sh
+    "$HOME/.local/bin/superpowers-trae" --version | grep -q "0.2.1"
 '
 
 # Case 4: 没 curl 时 wget 兜底
