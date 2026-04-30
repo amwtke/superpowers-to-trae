@@ -9,7 +9,7 @@ verify-build.sh 仅做静态校验。这份文档列出在 Trae IDE 上的真机
 
 ## 验证 1：用户级安装能被 Trae 识别
 
-1. `bash scripts/install.sh --user`
+1. `superpowers-trae init --dir "$HOME/sp-smoke-test"`（用一个干净空目录模拟项目根，避免污染 $HOME）
 2. 启动 Trae IDE，新建/打开任意项目
 3. 在 Agent 聊天框输入：「我想做一个 X 工具，帮我设计一下」
 4. **预期**：Agent 在回复前调用 Read 工具读取 `~/.trae/skills/superpowers/brainstorming/SKILL.md`（在工具调用日志中可见），然后按 brainstorming 流程逐个澄清问题，而非直接给方案。
@@ -21,7 +21,7 @@ verify-build.sh 仅做静态校验。这份文档列出在 Trae IDE 上的真机
 
 ## 验证 3：项目级安装与 user_rules 不冲突
 
-1. `bash scripts/install.sh --project /path/to/test-proj`
+1. `superpowers-trae init --dir /path/to/test-proj`
 2. 在 Trae IDE 打开 `/path/to/test-proj`
 3. 验证 `.trae/rules/project_rules.md` 存在、`.trae/skills/superpowers/` 存在
 4. **预期**：项目级 rules 与可能存在的用户级 rules 共存（按 Trae 文档，project rules 在冲突时优先）。
