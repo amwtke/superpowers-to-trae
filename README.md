@@ -13,92 +13,48 @@
 
 ### 1. 装 superpowers-trae binary
 
-**从源码（需要 Rust 1.75+）：**
+**一键安装（推荐）：**
+
+```bash
+# Linux + macOS
+curl -fsSL https://raw.githubusercontent.com/amwtke/superpowers-to-trae/main/install.sh | sh
+
+# Windows (PowerShell)
+iwr -useb https://raw.githubusercontent.com/amwtke/superpowers-to-trae/main/install.ps1 | iex
+```
+
+跑完后二进制装到 `~/.local/bin/`（POSIX）或 `%USERPROFILE%\bin\`（Windows），并自动加入 PATH。如已在 PATH 里则跳过。
+
+可选环境变量：
+
+| 变量 | 作用 | 默认 |
+|---|---|---|
+| `SUPERPOWERS_INSTALL_DIR` | 装到哪 | `~/.local/bin` / `%USERPROFILE%\bin` |
+| `SUPERPOWERS_VERSION` | 装哪个版本 tag | `latest` |
+
+<details>
+<summary><b>不想跑脚本？手工安装</b></summary>
+
+从 [Releases](https://github.com/amwtke/superpowers-to-trae/releases) 下载对应平台压缩包：
+
+- Linux x86_64：`superpowers-trae-linux-x86_64.tar.gz`
+- macOS Apple Silicon：`superpowers-trae-macos-aarch64.tar.gz`
+- macOS Intel：`superpowers-trae-macos-x86_64.tar.gz`
+- Windows x86_64：`superpowers-trae-windows-x86_64.zip`
+
+POSIX：`tar xzf <archive> && sudo install -m 0755 superpowers-trae /usr/local/bin/`
+Windows：解压后把 `superpowers-trae.exe` 放到任一在 `%PATH%` 的目录。
+macOS 首次执行被 Gatekeeper 拦截：`xattr -d com.apple.quarantine superpowers-trae`。
+
+</details>
+
+<details>
+<summary><b>从源码安装（需要 Rust 1.75+）</b></summary>
 
 ```bash
 cargo install --git https://github.com/amwtke/superpowers-to-trae \
   --tag v0.2.1 superpowers-trae
 ```
-
-**预编译二进制：** 在 [Releases](https://github.com/amwtke/superpowers-to-trae/releases) 下载对应平台压缩包，按下面步骤把可执行文件放到 PATH。下载链接里 `latest` 会自动指向最新 tag，无需手动改版本号。
-
-<details>
-<summary><b>Linux x86_64</b></summary>
-
-```bash
-curl -L -o superpowers-trae.tar.gz \
-  https://github.com/amwtke/superpowers-to-trae/releases/latest/download/superpowers-trae-linux-x86_64.tar.gz
-tar xzf superpowers-trae.tar.gz
-sudo install -m 0755 superpowers-trae /usr/local/bin/
-
-superpowers-trae --version   # 验证
-```
-
-无 sudo 权限的话改装到 `~/.local/bin/`（确保它在 `$PATH` 里）：
-
-```bash
-mkdir -p ~/.local/bin && install -m 0755 superpowers-trae ~/.local/bin/
-```
-
-</details>
-
-<details>
-<summary><b>macOS Apple Silicon (M1/M2/M3/M4)</b></summary>
-
-```bash
-curl -L -o superpowers-trae.tar.gz \
-  https://github.com/amwtke/superpowers-to-trae/releases/latest/download/superpowers-trae-macos-aarch64.tar.gz
-tar xzf superpowers-trae.tar.gz
-
-# 解除 Gatekeeper 隔离（首次从浏览器下载的二进制必做，curl 下载可跳过）
-xattr -d com.apple.quarantine superpowers-trae 2>/dev/null || true
-
-sudo install -m 0755 superpowers-trae /usr/local/bin/
-superpowers-trae --version
-```
-
-</details>
-
-<details>
-<summary><b>macOS Intel</b></summary>
-
-```bash
-curl -L -o superpowers-trae.tar.gz \
-  https://github.com/amwtke/superpowers-to-trae/releases/latest/download/superpowers-trae-macos-x86_64.tar.gz
-tar xzf superpowers-trae.tar.gz
-xattr -d com.apple.quarantine superpowers-trae 2>/dev/null || true
-sudo install -m 0755 superpowers-trae /usr/local/bin/
-superpowers-trae --version
-```
-
-</details>
-
-<details>
-<summary><b>Windows x86_64</b></summary>
-
-PowerShell（推荐，免装额外工具）：
-
-```powershell
-# 下载
-Invoke-WebRequest -Uri https://github.com/amwtke/superpowers-to-trae/releases/latest/download/superpowers-trae-windows-x86_64.zip -OutFile superpowers-trae.zip
-
-# 解压到 %USERPROFILE%\bin
-$dest = "$env:USERPROFILE\bin"
-New-Item -ItemType Directory -Force -Path $dest | Out-Null
-Expand-Archive -Force -Path superpowers-trae.zip -DestinationPath $dest
-
-# 永久加入用户 PATH（仅需一次，新开终端生效）
-$user = [Environment]::GetEnvironmentVariable("Path","User")
-if ($user -notlike "*$dest*") {
-  [Environment]::SetEnvironmentVariable("Path","$user;$dest","User")
-}
-
-# 当前会话立即可用
-$env:Path = "$env:Path;$dest"
-superpowers-trae --version
-```
-
-或用 GUI：浏览器下载 zip → 右键解压 → 把 `superpowers-trae.exe` 放到任一已在 `PATH` 的目录（例如 `C:\Users\<你>\bin\`），再去"系统 → 高级系统设置 → 环境变量"把该目录加进 `Path`。
 
 </details>
 
@@ -173,14 +129,6 @@ git tag v0.1.x && git push --tags  # 触发 release workflow
 | `cli/` | Rust CLI 工程（superpowers-trae binary） |
 | `tests/` | python 单测 + 端到端 fixture smoke |
 | `docs/superpowers/` | 设计文档、实施计划、手工测试步骤 |
-
-## 旧 shell 脚本（deprecated）
-
-`scripts/install.sh` 是 v0.1 之前的旧安装方式。**v0.1+ 用户应优先使用 Rust CLI** `superpowers-trae init`。shell 脚本被保留用于：
-- maintainer pipeline 内部（python 转换器 / dist 生成）
-- 已经在用旧脚本的项目的渐进迁移
-
-shell 脚本不再获得功能更新。
 
 ## License
 
