@@ -13,10 +13,11 @@ $Repo = 'amwtke/superpowers-to-trae'
 # Ensure TLS 1.2 on older Win10 builds where it isn't the default
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-# 1. Arch check
-$arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
-if ($arch -ne [System.Runtime.InteropServices.Architecture]::X64) {
-    Write-Error "unsupported arch: $arch (only X64 is supported on Windows)"
+# 1. Arch check (use env vars; works on Windows PowerShell 5.1 + pwsh 7+)
+# PROCESSOR_ARCHITEW6432 is set when 32-bit PS runs on 64-bit Windows; otherwise PROCESSOR_ARCHITECTURE.
+$arch = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
+if ($arch -ne 'AMD64') {
+    Write-Error "unsupported arch: $arch (only AMD64/x86_64 is supported on Windows)"
     exit 1
 }
 
