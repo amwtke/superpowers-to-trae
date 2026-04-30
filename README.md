@@ -17,7 +17,7 @@
 
 ```bash
 cargo install --git https://github.com/amwtke/superpowers-to-trae \
-  --tag v0.2.0 superpowers-trae
+  --tag v0.2.1 superpowers-trae
 ```
 
 **预编译二进制：** 在 [Releases](https://github.com/amwtke/superpowers-to-trae/releases) 下载对应平台压缩包，按下面步骤把可执行文件放到 PATH。下载链接里 `latest` 会自动指向最新 tag，无需手动改版本号。
