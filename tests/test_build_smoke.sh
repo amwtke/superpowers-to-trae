@@ -30,8 +30,6 @@ assert_file() { [[ -f "$1" ]] || { echo "MISSING: $1"; exit 1; }; }
 assert_grep() { grep -q "$1" "$2" || { echo "GREP FAIL '$1' in $2"; exit 1; }; }
 
 assert_file "$TMP/dist/user/rules/user_rules.md"
-assert_file "$TMP/dist/project/rules/project_rules.md"
-assert_file "$TMP/dist/project/skills/superpowers/fake-alpha/SKILL.md"
 assert_file "$TMP/dist/user/skills/superpowers/fake-alpha/SKILL.md"
 assert_file "$TMP/dist/user/skills/superpowers/fake-beta/SKILL.md"
 assert_file "$TMP/dist/user/skills/superpowers/references/trae-tools.md"
@@ -53,8 +51,5 @@ assert_grep "<TBD-Trae-TaskCreate>"  "$TMP/dist/user/skills/superpowers/fake-alp
 # bootstrap 索引应含两个 fake skill
 assert_grep "fake-alpha" "$TMP/dist/user/rules/user_rules.md"
 assert_grep "fake-beta"  "$TMP/dist/user/rules/user_rules.md"
-
-# project_rules.md 不应有 user_rules.md 同名残留
-[[ ! -f "$TMP/dist/project/rules/user_rules.md" ]] || { echo "stray user_rules.md in project/"; exit 1; }
 
 echo "test_build_smoke: PASS"

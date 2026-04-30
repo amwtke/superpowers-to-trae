@@ -16,7 +16,7 @@ if [[ ! -d "$DIST" ]]; then
 fi
 
 # 1. Frontmatter 完整性：每个 SKILL.md 都要有非空 name 和 description
-echo "[1/5] Frontmatter completeness ..."
+echo "[1/4] Frontmatter completeness ..."
 while IFS= read -r f; do
     if ! head -20 "$f" | grep -q "^name:"; then
         echo "  FAIL: missing 'name:' in $f"; fail=1
@@ -27,7 +27,7 @@ while IFS= read -r f; do
 done < <(find "$DIST" -name SKILL.md)
 
 # 2. 黑名单扫描
-echo "[2/5] Forbidden strings ..."
+echo "[2/4] Forbidden strings ..."
 while IFS= read -r pat; do
     [[ -z "$pat" ]] && continue
     # Exclude the explanatory reference doc which intentionally names "Claude Code"
@@ -40,7 +40,7 @@ while IFS= read -r pat; do
 done < "$BLACKLIST"
 
 # 3. user_rules.md size 预算（≤4KB warning，≤6KB fatal）
-echo "[3/5] user_rules.md size budget ..."
+echo "[3/4] user_rules.md size budget ..."
 for rules in "$DIST/user/rules/user_rules.md" "$DIST/project/rules/project_rules.md"; do
     [[ -f "$rules" ]] || continue
     size=$(wc -c < "$rules")
@@ -54,7 +54,7 @@ for rules in "$DIST/user/rules/user_rules.md" "$DIST/project/rules/project_rules
 done
 
 # 4. Mappings 覆盖率
-echo "[4/5] Mappings coverage ..."
+echo "[4/4] Mappings coverage ..."
 rc=0
 { PROJECT_ROOT="$ROOT" python3 - <<'PY'
 import json, os, pathlib, sys
@@ -83,18 +83,6 @@ if (( rc == 2 )); then
     warn=1
 elif (( rc != 0 )); then
     fail=1
-fi
-
-# 5. dist/user 与 dist/project 关键文件一致性
-echo "[5/5] user/ vs project/ structure parity ..."
-if [[ ! -f "$DIST/user/rules/user_rules.md" ]]; then
-    echo "  FAIL: missing dist/user/rules/user_rules.md"; fail=1
-fi
-if [[ ! -f "$DIST/project/rules/project_rules.md" ]]; then
-    echo "  FAIL: missing dist/project/rules/project_rules.md"; fail=1
-fi
-if [[ -f "$DIST/project/rules/user_rules.md" ]]; then
-    echo "  FAIL: dist/project should not contain user_rules.md"; fail=1
 fi
 
 echo

@@ -90,22 +90,11 @@ def install_trae_tools_ref(src_ref: pathlib.Path, dist_skills: pathlib.Path) -> 
     shutil.copy(src_ref, target)
 
 
-def mirror_user_to_project(user_dir: pathlib.Path, project_dir: pathlib.Path) -> None:
-    if project_dir.exists():
-        shutil.rmtree(project_dir)
-    shutil.copytree(user_dir, project_dir)
-    user_rules = project_dir / "rules" / "user_rules.md"
-    project_rules = project_dir / "rules" / "project_rules.md"
-    if user_rules.exists():
-        user_rules.rename(project_rules)
-
-
 def main(argv: list) -> None:
     root = pathlib.Path(argv[1]) if len(argv) > 1 else pathlib.Path.cwd()
     upstream = root / "upstream"
     src = root / "src"
     dist_user = root / "dist" / "user"
-    dist_project = root / "dist" / "project"
 
     if (root / "dist").exists():
         shutil.rmtree(root / "dist")
@@ -141,13 +130,9 @@ def main(argv: list) -> None:
     # Phase 5: code-reviewer
     reviewer_written = transform_code_reviewer(upstream, dist_user / "agents", mappings)
 
-    # Phase 6: mirror to project
-    mirror_user_to_project(dist_user, dist_project)
-
     agent_count = len(mappings["agents_to_generate"]) + (1 if reviewer_written else 0)
     print(f"Built {len(skills_meta)} skills, {agent_count} agents")
     print(f"  -> {dist_user}")
-    print(f"  -> {dist_project}")
 
 
 if __name__ == "__main__":

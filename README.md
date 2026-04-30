@@ -115,7 +115,7 @@ DDD plugin 移植自 [ddd-run](https://github.com/amwtke/ddd-run)。
 make all        # sync upstream + build dist + cargo build
 make test       # python + Rust 全套测试
 make e2e-smoke  # init/upgrade/status 链路 smoke
-git tag v0.1.x && git push --tags  # 触发 release workflow
+git tag v0.2.x && git push --tags  # 触发 release workflow
 ```
 
 ## 项目结构
