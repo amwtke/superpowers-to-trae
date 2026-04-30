@@ -1,6 +1,6 @@
 [package]
 name = "superpowers-trae"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 authors = ["xiaojin <amwtke@gmail.com>"]
 description = "One-shot installer for the Superpowers methodology in Trae IDE projects"
