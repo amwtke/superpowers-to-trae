@@ -1,6 +1,6 @@
 # Trae IDE 自定义 Agent 创建指南
 
-`scripts/install.sh` 已经把 `rules/project_rules.md` 和 `skills/superpowers/` 文件级落到项目里。但 **Trae 的 Custom Agent 跟 Trae 账号绑定、存在 ByteDance 服务器**，本地脚本装不进去——必须在 Trae IDE UI 手工创建。
+`superpowers-trae init` 已经把 `rules/project_rules.md` 和 `skills/superpowers/` 文件级落到项目里。但 **Trae 的 Custom Agent 跟 Trae 账号绑定、存在 ByteDance 服务器**，CLI 装不进去——必须在 Trae IDE UI 手工创建。
 
 > 一次创建，跟着 Trae 账号同步到所有装了 Trae 的机器，不是每台机器一遍。
 
