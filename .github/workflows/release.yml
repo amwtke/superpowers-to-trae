@@ -13,18 +13,26 @@ jobs:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             archive_suffix: linux-x86_64
+            archive_ext: tar.gz
           - target: aarch64-apple-darwin
             os: macos-14
             archive_suffix: macos-aarch64
+            archive_ext: tar.gz
           - target: x86_64-apple-darwin
             os: macos-13
             archive_suffix: macos-x86_64
+            archive_ext: tar.gz
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            archive_suffix: windows-x86_64
+            archive_ext: zip
 
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Verify dist/user is committed
+        shell: bash
         run: |
           test -f dist/user/rules/user_rules.md || {
             echo "ERROR: dist/user/ not in repo. Run 'make all' locally and commit before tagging." >&2
@@ -39,13 +47,27 @@ jobs:
         working-directory: cli
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Package
+      - name: Package (tar.gz)
+        if: matrix.archive_ext == 'tar.gz'
+        shell: bash
         run: |
           ARCHIVE="superpowers-trae-${{ matrix.archive_suffix }}.tar.gz"
           tar czf "$ARCHIVE" \
             -C cli/target/${{ matrix.target }}/release superpowers-trae \
             -C ../../../../ LICENSE README.md
           echo "ARCHIVE=$ARCHIVE" >> $GITHUB_ENV
+
+      - name: Package (zip)
+        if: matrix.archive_ext == 'zip'
+        shell: pwsh
+        run: |
+          $archive = "superpowers-trae-${{ matrix.archive_suffix }}.zip"
+          New-Item -ItemType Directory -Path staging | Out-Null
+          Copy-Item "cli/target/${{ matrix.target }}/release/superpowers-trae.exe" staging/
+          Copy-Item LICENSE staging/
+          Copy-Item README.md staging/
+          Compress-Archive -Path staging/* -DestinationPath $archive
+          "ARCHIVE=$archive" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - uses: softprops/action-gh-release@v2
         with:

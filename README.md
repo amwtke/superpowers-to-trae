@@ -20,7 +20,87 @@ cargo install --git https://github.com/amwtke/superpowers-to-trae \
   --tag v0.2.0 superpowers-trae
 ```
 
-**预编译二进制：** 在 [Releases](https://github.com/amwtke/superpowers-to-trae/releases) 选对应平台 tar.gz 解压到 PATH 上（Linux x86_64 / macOS Apple Silicon / macOS Intel）。
+**预编译二进制：** 在 [Releases](https://github.com/amwtke/superpowers-to-trae/releases) 下载对应平台压缩包，按下面步骤把可执行文件放到 PATH。下载链接里 `latest` 会自动指向最新 tag，无需手动改版本号。
+
+<details>
+<summary><b>Linux x86_64</b></summary>
+
+```bash
+curl -L -o superpowers-trae.tar.gz \
+  https://github.com/amwtke/superpowers-to-trae/releases/latest/download/superpowers-trae-linux-x86_64.tar.gz
+tar xzf superpowers-trae.tar.gz
+sudo install -m 0755 superpowers-trae /usr/local/bin/
+
+superpowers-trae --version   # 验证
+```
+
+无 sudo 权限的话改装到 `~/.local/bin/`（确保它在 `$PATH` 里）：
+
+```bash
+mkdir -p ~/.local/bin && install -m 0755 superpowers-trae ~/.local/bin/
+```
+
+</details>
+
+<details>
+<summary><b>macOS Apple Silicon (M1/M2/M3/M4)</b></summary>
+
+```bash
+curl -L -o superpowers-trae.tar.gz \
+  https://github.com/amwtke/superpowers-to-trae/releases/latest/download/superpowers-trae-macos-aarch64.tar.gz
+tar xzf superpowers-trae.tar.gz
+
+# 解除 Gatekeeper 隔离（首次从浏览器下载的二进制必做，curl 下载可跳过）
+xattr -d com.apple.quarantine superpowers-trae 2>/dev/null || true
+
+sudo install -m 0755 superpowers-trae /usr/local/bin/
+superpowers-trae --version
+```
+
+</details>
+
+<details>
+<summary><b>macOS Intel</b></summary>
+
+```bash
+curl -L -o superpowers-trae.tar.gz \
+  https://github.com/amwtke/superpowers-to-trae/releases/latest/download/superpowers-trae-macos-x86_64.tar.gz
+tar xzf superpowers-trae.tar.gz
+xattr -d com.apple.quarantine superpowers-trae 2>/dev/null || true
+sudo install -m 0755 superpowers-trae /usr/local/bin/
+superpowers-trae --version
+```
+
+</details>
+
+<details>
+<summary><b>Windows x86_64</b></summary>
+
+PowerShell（推荐，免装额外工具）：
+
+```powershell
+# 下载
+Invoke-WebRequest -Uri https://github.com/amwtke/superpowers-to-trae/releases/latest/download/superpowers-trae-windows-x86_64.zip -OutFile superpowers-trae.zip
+
+# 解压到 %USERPROFILE%\bin
+$dest = "$env:USERPROFILE\bin"
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
+Expand-Archive -Force -Path superpowers-trae.zip -DestinationPath $dest
+
+# 永久加入用户 PATH（仅需一次，新开终端生效）
+$user = [Environment]::GetEnvironmentVariable("Path","User")
+if ($user -notlike "*$dest*") {
+  [Environment]::SetEnvironmentVariable("Path","$user;$dest","User")
+}
+
+# 当前会话立即可用
+$env:Path = "$env:Path;$dest"
+superpowers-trae --version
+```
+
+或用 GUI：浏览器下载 zip → 右键解压 → 把 `superpowers-trae.exe` 放到任一已在 `PATH` 的目录（例如 `C:\Users\<你>\bin\`），再去"系统 → 高级系统设置 → 环境变量"把该目录加进 `Path`。
+
+</details>
 
 ### 2. 在你的项目里 init
 
