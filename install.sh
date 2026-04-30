@@ -90,7 +90,7 @@ if [ "$need_rc" = "1" ]; then
         *)    rc="$HOME/.profile" ;;
     esac
 
-    if [ ! -f "$rc" ] || ! grep -F -q "$INSTALL_DIR" "$rc" 2>/dev/null; then
+    if [ ! -f "$rc" ] || ! grep -F -q "Added by superpowers-trae installer" "$rc" 2>/dev/null; then
         mkdir -p "$(dirname "$rc")"
         if [ "$shell_name" = "fish" ]; then
             printf '\n# Added by superpowers-trae installer\nfish_add_path %s\n' "$INSTALL_DIR" >> "$rc"
