@@ -1,4 +1,5 @@
 # superpowers-trae one-line installer for Windows.
+# Requires: PowerShell 5.1+ (Win10 built-in) or PowerShell 7+.
 # Usage:
 #   iwr -useb https://raw.githubusercontent.com/amwtke/superpowers-to-trae/main/install.ps1 | iex
 #
@@ -8,6 +9,9 @@
 
 $ErrorActionPreference = 'Stop'
 $Repo = 'amwtke/superpowers-to-trae'
+
+# Ensure TLS 1.2 on older Win10 builds where it isn't the default
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 # 1. Arch check
 $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
@@ -28,17 +32,30 @@ if ($ver -eq 'latest') {
     $url = "https://github.com/$Repo/releases/download/$ver/superpowers-trae-windows-x86_64.zip"
 }
 
-# 4. Download + extract
+# 4. Download + extract (clean up temp on failure)
 $tmp = Join-Path $env:TEMP "superpowers-trae-$([guid]::NewGuid()).zip"
 Write-Host "Downloading $url ..."
-Invoke-WebRequest -Uri $url -OutFile $tmp -UseBasicParsing
-Expand-Archive -Force -Path $tmp -DestinationPath $dest
-Remove-Item $tmp
+try {
+    Invoke-WebRequest -Uri $url -OutFile $tmp -UseBasicParsing
+    Expand-Archive -Force -Path $tmp -DestinationPath $dest
+} finally {
+    if (Test-Path $tmp) { Remove-Item $tmp -ErrorAction SilentlyContinue }
+}
 
-# 5. PATH（User scope，永久 + 当前会话）
+# 5. PATH (User scope persistent + current session)
 $pathChanged = $false
 $user = [Environment]::GetEnvironmentVariable('Path', 'User')
-if (-not ($user -like "*$dest*")) {
+$destNorm = $dest.TrimEnd('\')
+$alreadyOnPath = $false
+if ($user) {
+    foreach ($entry in ($user -split ';')) {
+        if ($entry -and ($entry.TrimEnd('\') -ieq $destNorm)) {
+            $alreadyOnPath = $true
+            break
+        }
+    }
+}
+if (-not $alreadyOnPath) {
     $newPath = if ($user) { "$user;$dest" } else { $dest }
     [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
     $pathChanged = $true
@@ -47,7 +64,17 @@ $env:Path = "$env:Path;$dest"
 
 # 6. Verify + report
 $exe = Join-Path $dest 'superpowers-trae.exe'
-$verOut = & $exe --version 2>&1
+if (-not (Test-Path $exe)) {
+    Write-Error "extracted archive does not contain superpowers-trae.exe at $exe"
+    exit 1
+}
+try {
+    $verOut = & $exe --version 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "exit code $LASTEXITCODE" }
+} catch {
+    Write-Error "binary failed to launch: $_  (arch mismatch? missing VC++ runtime? try https://aka.ms/vs/17/release/vc_redist.x64.exe)"
+    exit 1
+}
 Write-Host "✓ $verOut installed at $exe" -ForegroundColor Green
 
 if ($pathChanged) {
