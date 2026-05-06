@@ -53,7 +53,7 @@ macOS 首次执行被 Gatekeeper 拦截：`xattr -d com.apple.quarantine superpo
 
 ```bash
 cargo install --git https://github.com/amwtke/superpowers-to-trae \
-  --tag v0.2.2 superpowers-trae
+  --tag v0.3.0 superpowers-trae
 ```
 
 </details>

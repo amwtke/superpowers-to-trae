@@ -26,7 +26,7 @@ If no skill matches, proceed with your normal capabilities.
 - subagent-driven-development — Use when executing implementation plans with independent tasks in the current session
 - systematic-debugging — Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
 - test-driven-development — Use when implementing any feature or bugfix, before writing implementation code
-- using-git-worktrees — Use when starting feature work that needs isolation from current workspace or before executing implementation plans - creates isolated git worktrees with smart directory selection and safety verification
+- using-git-worktrees — Use when starting feature work that needs isolation from current workspace or before executing implementation plans - ensures an isolated workspace exists via native tools or git worktree fallback
 - using-superpowers — Use when starting any conversation - establishes how to find and use skills, requiring Skill tool invocation before ANY response including clarifying questions
 - verification-before-completion — Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always
 - writing-plans — Use when you have a spec or requirements for a multi-step task, before touching code
