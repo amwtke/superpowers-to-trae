@@ -81,3 +81,31 @@ Write-Host "✓ $verOut installed at $exe" -ForegroundColor Green
 if ($pathChanged) {
     Write-Host "PATH updated (User scope) — open a new terminal for it to take effect" -ForegroundColor Yellow
 }
+
+# 7. PATH precedence check — flag if a different superpowers-trae shadows the new one.
+$exeCanonical = (Resolve-Path -LiteralPath $exe).Path
+$resolved = (Get-Command superpowers-trae -ErrorAction SilentlyContinue).Source
+if ($resolved) {
+    $resolvedCanonical = (Resolve-Path -LiteralPath $resolved).Path
+    if ($resolvedCanonical -ine $exeCanonical) {
+        $otherVer = & $resolved --version 2>&1
+        Write-Host "⚠ another superpowers-trae takes precedence on PATH:" -ForegroundColor Yellow
+        Write-Host "    $resolved  ($otherVer)" -ForegroundColor Yellow
+        Write-Host "    $exe  ($verOut)  <- just installed" -ForegroundColor Yellow
+        Write-Host "  Fix: open a new terminal. To remove the older binary:" -ForegroundColor Yellow
+        Write-Host "    Remove-Item '$resolved'" -ForegroundColor Yellow
+    }
+} else {
+    $resolvedCanonical = $null
+}
+
+# 8. Cargo install residue — common when users previously ran `cargo install`.
+$cargoBin = Join-Path $env:USERPROFILE '.cargo\bin\superpowers-trae.exe'
+if (Test-Path $cargoBin) {
+    $cargoCanonical = (Resolve-Path -LiteralPath $cargoBin).Path
+    if ($cargoCanonical -ine $exeCanonical -and $cargoCanonical -ine $resolvedCanonical) {
+        $cargoVer = & $cargoBin --version 2>&1
+        Write-Host "⚠ legacy cargo install detected: $cargoBin  ($cargoVer)" -ForegroundColor Yellow
+        Write-Host "  Recommended: Remove-Item '$cargoBin'" -ForegroundColor Yellow
+    }
+}

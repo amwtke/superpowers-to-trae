@@ -108,3 +108,43 @@ green "✓ $ver_line installed at $INSTALL_DIR/superpowers-trae"
 if [ -n "$rc_modified" ]; then
     yellow "PATH updated in $rc_modified — open a new shell or run: . $rc_modified"
 fi
+
+# 8. PATH precedence check — flag if a different superpowers-trae shadows the new one.
+#    Inside a `curl | sh` subshell PATH may not yet include INSTALL_DIR if it was
+#    only just appended to an rc file; pre-pend it for this subshell so command -v
+#    reflects the post-install PATH order users will see.
+case ":$PATH:" in
+    *":$INSTALL_DIR:"*) ;;
+    *) PATH="$INSTALL_DIR:$PATH"; export PATH ;;
+esac
+
+canonical() {
+    [ -e "$1" ] || return 1
+    cd "$(dirname "$1")" 2>/dev/null && printf '%s/%s\n' "$(pwd -P)" "$(basename "$1")"
+}
+
+new_canonical=$(canonical "$INSTALL_DIR/superpowers-trae" || true)
+resolved=$(command -v superpowers-trae 2>/dev/null || true)
+res_canonical=""
+[ -n "$resolved" ] && res_canonical=$(canonical "$resolved" || true)
+
+if [ -n "$resolved" ] && [ "$res_canonical" != "$new_canonical" ]; then
+    other_ver=$("$resolved" --version 2>/dev/null | head -n1 || echo "?")
+    yellow "⚠ another superpowers-trae takes precedence on PATH:"
+    yellow "    $resolved  ($other_ver)"
+    yellow "    $INSTALL_DIR/superpowers-trae  ($ver_line)  ← just installed"
+    yellow "  Fix: open a new shell, or run 'hash -r'. To remove the older binary:"
+    yellow "    rm $resolved"
+fi
+
+# 9. Cargo install residue — common when users previously ran `cargo install`.
+#    Skip if 8 already named this exact path.
+cargo_bin="$HOME/.cargo/bin/superpowers-trae"
+cargo_canonical=$(canonical "$cargo_bin" || true)
+if [ -n "$cargo_canonical" ] \
+    && [ "$cargo_canonical" != "$new_canonical" ] \
+    && [ "$cargo_canonical" != "$res_canonical" ]; then
+    cargo_ver=$("$cargo_bin" --version 2>/dev/null | head -n1 || echo "?")
+    yellow "⚠ legacy cargo install detected: $cargo_bin  ($cargo_ver)"
+    yellow "  Recommended: rm $cargo_bin"
+fi
