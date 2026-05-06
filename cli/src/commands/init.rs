@@ -3,7 +3,7 @@
 use anyhow::{anyhow, Result};
 use std::path::{Path, PathBuf};
 use include_dir::DirEntry;
-use crate::{addons, agents_md, embed, rollback};
+use crate::{addons, agents_md, embed, gitignore, rollback};
 
 /// Pre-install validation. Returns Err if the project cannot accept install.
 pub fn preflight(dir: &Path, force: bool) -> Result<()> {
@@ -85,6 +85,11 @@ pub fn run_with_options(
     let log_body = render_install_log(session.commit_actions_view());
     let _ = std::fs::create_dir_all(log_target.parent().unwrap());
     let _ = std::fs::write(&log_target, log_body);
+
+    // Phase 6: maintain .gitignore (best-effort; never fails the install)
+    if let Err(e) = gitignore::ensure_gitignore(dir) {
+        eprintln!("⚠ failed to update .gitignore: {e}");
+    }
 
     print_success(dir, skills_meta.len());
     Ok(())

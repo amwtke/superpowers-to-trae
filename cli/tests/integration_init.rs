@@ -80,6 +80,53 @@ fn init_end_output_mentions_superpowers_trigger_word() {
 }
 
 #[test]
+fn init_writes_managed_gitignore_block() {
+    let tmp = tempdir().unwrap();
+    cli()
+        .args(["init", "--dir", tmp.path().to_str().unwrap()])
+        .assert()
+        .success();
+
+    let gitignore = fs::read_to_string(tmp.path().join(".gitignore")).unwrap();
+    assert!(gitignore.contains("# >>> superpowers-trae managed"));
+    assert!(gitignore.contains(".trae/"));
+    assert!(gitignore.contains("# <<< superpowers-trae managed"));
+    assert!(
+        !gitignore.contains("README-DDD-HARNESS.md"),
+        "DDD line leaked when DDD not installed"
+    );
+}
+
+#[test]
+fn init_with_ddd_includes_ddd_readme_in_gitignore() {
+    let tmp = tempdir().unwrap();
+    cli()
+        .args(["init", "--dir", tmp.path().to_str().unwrap(), "--addons", "ddd"])
+        .assert()
+        .success();
+
+    let gitignore = fs::read_to_string(tmp.path().join(".gitignore")).unwrap();
+    assert!(gitignore.contains(".trae/"));
+    assert!(gitignore.contains("README-DDD-HARNESS.md"));
+}
+
+#[test]
+fn init_preserves_user_gitignore_content() {
+    let tmp = tempdir().unwrap();
+    fs::write(tmp.path().join(".gitignore"), "node_modules/\n*.log\n").unwrap();
+
+    cli()
+        .args(["init", "--dir", tmp.path().to_str().unwrap()])
+        .assert()
+        .success();
+
+    let gitignore = fs::read_to_string(tmp.path().join(".gitignore")).unwrap();
+    assert!(gitignore.contains("node_modules/"));
+    assert!(gitignore.contains("*.log"));
+    assert!(gitignore.contains(".trae/"));
+}
+
+#[test]
 fn agents_md_contains_directive_and_skill_index() {
     let tmp = tempdir().unwrap();
     cli()

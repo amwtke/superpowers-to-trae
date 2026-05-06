@@ -79,6 +79,31 @@ fn upgrade_no_backup_skips_backup() {
     );
 }
 
+#[test]
+fn upgrade_replaces_managed_gitignore_block_in_place() {
+    let tmp = tempdir().unwrap();
+    cli()
+        .args(["init", "--dir", tmp.path().to_str().unwrap()])
+        .assert()
+        .success();
+
+    // 用户在 .gitignore 别处加了自己的内容（marker 块外）
+    let gi_path = tmp.path().join(".gitignore");
+    let initial = fs::read_to_string(&gi_path).unwrap();
+    fs::write(&gi_path, format!("{initial}custom-user-rule/\n")).unwrap();
+
+    cli()
+        .args(["upgrade", "--dir", tmp.path().to_str().unwrap()])
+        .assert()
+        .success();
+
+    let after = fs::read_to_string(&gi_path).unwrap();
+    assert!(after.contains("custom-user-rule/"), "user content lost on upgrade");
+    assert!(after.contains(".trae/"));
+    // marker 不应被重复
+    assert_eq!(after.matches("# >>> superpowers-trae managed").count(), 1);
+}
+
 fn walkdir_count_baks(root: &std::path::Path) -> usize {
     let mut count = 0;
     let mut stack = vec![root.to_path_buf()];

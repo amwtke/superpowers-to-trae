@@ -8,6 +8,7 @@ mod agents_md;
 mod rollback;
 mod addons;
 mod commands;
+mod gitignore;
 
 #[derive(Parser, Debug)]
 #[command(name = "superpowers-trae", version, about, long_about = None)]
