@@ -33,7 +33,7 @@ iwr -useb https://raw.githubusercontent.com/amwtke/superpowers-to-trae/main/inst
 源码（需 Rust 1.75+）：
 ```bash
 cargo install --git https://github.com/amwtke/superpowers-to-trae \
-  --tag v0.3.0 superpowers-trae
+  --tag v0.3.1 superpowers-trae
 ```
 
 </details>
