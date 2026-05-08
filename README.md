@@ -102,11 +102,16 @@ superpowers-trae upgrade
 
 ## 三、维护者：发布新版本
 
-上游 [obra/superpowers](https://github.com/obra/superpowers) 发新版时，在仓库根触发：
+本仓库有两条上游、两条同步流水线：
 
-```
-/update-from-upstream
-```
+| 上游 | 维护内容 | 触发 |
+|---|---|---|
+| [obra/superpowers](https://github.com/obra/superpowers) | `upstream/` 镜像 + `dist/` 渲染产物 | `/update-from-upstream` |
+| [amwtke/ddd-run](https://github.com/amwtke/ddd-run) | `cli/templates/ddd/` 模板 | `/sync-ddd-run` |
+
+两条流水线的当前上游版本都记录在 `cli/Cargo.toml` 的 `[package.metadata.upstream]` 段（`superpowers_version` / `ddd_run_version`），是判断"是否已是最新"的 SSOT。
+
+### 3.1 同步 superpowers 上游 — `/update-from-upstream`
 
 由 `.claude/skills/update-from-upstream/SKILL.md` 驱动的 9 步流水线：
 
@@ -129,6 +134,30 @@ make test                  # 全套测试
 git commit -am "..." && git tag v0.x.y && git push origin main --tags
 ```
 
+### 3.2 同步 ddd-run 上游 — `/sync-ddd-run`
+
+由 `.claude/skills/sync-ddd-run/SKILL.md` 驱动的 9 步流水线：
+
+1. `git status` 工作树必须干净
+2. `git clone --depth 50 https://github.com/amwtke/ddd-run.git /tmp/ddd-run-sync`
+3. 对比 `cli/Cargo.toml` 里 `ddd_run_version` 与上游 HEAD SHA——一致则直接终止
+4. Diff 5 个映射 md 文件（3 个 ddd skill + `DOMAIN.md` + `README-DDD-HARNESS.md`）+ 列出上游全部 templates 文件，对比映射表找新增的非 md 文件
+5. 强制覆盖 5 个映射 md（`claude-md-merge.md` 是 trae 专用，永不覆盖）
+6. `make test` 全绿
+7. 把 `Cargo.toml` 里 `ddd_run_version` 更新为新 SHA
+8. Bump `cli/Cargo.toml` 版本（仅 md 内容增量 → patch；改 cli 代码或加新 skill → minor）
+9. `git commit` + `git tag vX.Y.Z` + `git push --tags` + 输出消费者升级通知文案
+
+**不在映射表里的上游文件 skill 不动**——例如上游的 `root/CLAUDE.md`（trae 用 `claude-md-merge.md` 替代）、`root/CleanArchitectureTest.java`（属 cli 安装逻辑改动，需单独决策）。skill 只在 Step 4 提醒。
+
+### 发版历史
+
+| 版本 | 主要内容 |
+|---|---|
+| **v0.3.2** (2026-05-08) | 同步 ddd-run `8cb30e0 → a5f986e`：强化 4 环 Clean Architecture 边界——ddd-model.md 加 2 条领域层污染反模式；ddd-spec.md 加 Result/UseCase/framework 装配模板（用例层零 Spring/SLF4J）；README-DDD-HARNESS.md 加 4 环速览 + ArchUnit 守卫说明 |
+| v0.3.1 | installer 装完后检测 PATH 冲突 + 残留 |
+| v0.3.0 | 同步 superpowers 5.0.7 → 5.1.0；init/upgrade 自动维护 .gitignore 段 |
+
 ### 项目结构（维护者参考）
 
 | 路径 | 说明 |
@@ -137,9 +166,10 @@ git commit -am "..." && git tag v0.x.y && git push origin main --tags
 | `src/` | Python 转换器：mappings.json + transform/render/build_helpers |
 | `scripts/` | sync-upstream.sh / build.sh |
 | `dist/` | Python pipeline 产物，被 Rust binary 编译时嵌入 |
-| `cli/` | Rust CLI 工程（`superpowers-trae` binary） |
+| `cli/` | Rust CLI 工程（`superpowers-trae` binary）；DDD 模板在 `cli/templates/ddd/` |
 | `tests/` | Python 单测 + 端到端 smoke |
-| `.claude/skills/update-from-upstream/` | 维护者升级流水线 skill |
+| `.claude/skills/update-from-upstream/` | superpowers 同步流水线 skill |
+| `.claude/skills/sync-ddd-run/` | ddd-run 同步流水线 skill |
 
 ---
 
