@@ -57,15 +57,16 @@ echo "Upstream HEAD: $UPSTREAM_SHA ($UPSTREAM_DATE)"
 
 ### Step 3 — 对比上游版本，判断要不要继续
 
+ddd-run SHA 的 SSOT 是 `cli/Cargo.toml` 的 `[package.metadata.upstream].ddd_run_version` 字段（同一段还有 `superpowers_version`，由 update-from-upstream 维护）。
+
 ```bash
-LOCAL_SHA=$(cat ~/workshop/superpowers-to-trae/upstream/DDD-VERSION 2>/dev/null || echo "none")
+LOCAL_SHA=$(grep '^ddd_run_version' ~/workshop/superpowers-to-trae/cli/Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
 echo "Local recorded SHA:  $LOCAL_SHA"
-echo "Upstream HEAD SHA:    $UPSTREAM_SHA"
+echo "Upstream HEAD SHA:   $UPSTREAM_SHA"
 ```
 
 判断：
 - `LOCAL_SHA == UPSTREAM_SHA` → **流程终止**，告诉用户"已是最新，无需同步"。不要瞎跑下面的步骤
-- `LOCAL_SHA == "none"` → 第一次跑本 skill，继续（同时本步要在 Step 7 写入 `upstream/DDD-VERSION`）
 - `LOCAL_SHA != UPSTREAM_SHA` → 继续
 
 ### Step 4 — Review 5 个 md 文件 diff
@@ -123,15 +124,9 @@ make test
 | frontmatter `name` 字段校验失败 | 上游某个 skill 改了 frontmatter，cli 校验规则不接受 → 看 `cli/src/templates.rs` 调一下 |
 | 路径硬编码失败 | 上游引用了 `.claude/` 之类路径，cli 的 phrase_replacements 没覆盖 → 看 `cli/src/phrase_replace.rs` 加规则 |
 
-### Step 7 — 更新 upstream/DDD-VERSION
+### Step 7 — 更新 Cargo.toml 里的 ddd_run_version
 
-```bash
-cat > upstream/DDD-VERSION <<EOF
-$UPSTREAM_SHA
-EOF
-```
-
-（一行 commit SHA 短码，作为下次 sync 的对比基准。）
+把 `cli/Cargo.toml` 的 `[package.metadata.upstream].ddd_run_version = "<旧 SHA>"` 改成 `"<新 UPSTREAM_SHA>"`。这一步与 Step 8 的 version bump 一起改 Cargo.toml，可一次性完成。
 
 ### Step 8 — Bump cli 版本
 
