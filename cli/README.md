@@ -6,7 +6,7 @@ One-shot installer for the [Superpowers](https://github.com/obra/superpowers) me
 
 ```bash
 cargo install --git https://github.com/amwtke/superpowers-to-trae \
-  --tag v0.3.1 superpowers-trae
+  --tag v0.3.2 superpowers-trae
 ```
 
 Or download a pre-built binary from [Releases](https://github.com/amwtke/superpowers-to-trae/releases).
