@@ -180,7 +180,8 @@ git commit -am "..." && git tag v0.x.y && git push origin main --tags
 
 | 版本 | 主要内容 |
 |---|---|
-| **v0.4.0** (2026-05-09) | 加 `--addons bob`：基于 run-bob 上游的 Bob 大叔 4 环 Clean Architecture skill 集（bob-identify / bob-onion / bob-spec）+ `BOB.md`（install-once）+ `README-RUN-BOB.md`；新增 `/sync-run-bob` 维护者流水线；`status` 子命令同时报告 ddd / bob addon 状态 |
+| **v0.4.1** (2026-05-09) | 同步 run-bob `aadcd68 → 46200f1`：bob-onion 加并发可变计数端口规约（库存/余额/配额必须暴露 `tryDecrease/restore` 原子语义动作）+ Step O5b 并发版本号决策（≥2 条状态迁移路径的 Entity 加 `@Version`）；bob-spec 新增"并发不超卖"+"并发状态迁移"测试场景，事务回滚场景升级为 checked 异常孪生 case，Command/Query 落 `usecase/in/`、Result 落 `usecase/out/`；BOB.md §2 包结构展开 in/out/port 子目录、§7 装饰器形态固定为 `@Transactional(rollbackFor = Exception.class)` |
+| v0.4.0 (2026-05-09) | 加 `--addons bob`：基于 run-bob 上游的 Bob 大叔 4 环 Clean Architecture skill 集（bob-identify / bob-onion / bob-spec）+ `BOB.md`（install-once）+ `README-RUN-BOB.md`；新增 `/sync-run-bob` 维护者流水线；`status` 子命令同时报告 ddd / bob addon 状态 |
 | v0.3.2 (2026-05-08) | 同步 ddd-run `8cb30e0 → a5f986e`：强化 4 环 Clean Architecture 边界——ddd-model.md 加 2 条领域层污染反模式；ddd-spec.md 加 Result/UseCase/framework 装配模板（用例层零 Spring/SLF4J）；README-DDD-HARNESS.md 加 4 环速览 + ArchUnit 守卫说明 |
 | v0.3.1 | installer 装完后检测 PATH 冲突 + 残留 |
 | v0.3.0 | 同步 superpowers 5.0.7 → 5.1.0；init/upgrade 自动维护 .gitignore 段 |
