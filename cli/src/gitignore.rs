@@ -17,6 +17,9 @@ pub fn ensure_gitignore(dir: &Path) -> Result<()> {
     if dir.join("README-DDD-HARNESS.md").exists() {
         entries.push("README-DDD-HARNESS.md".to_string());
     }
+    if dir.join("README-RUN-BOB.md").exists() {
+        entries.push("README-RUN-BOB.md".to_string());
+    }
     let body = entries.join("\n");
     let block = format!("{MARKER_BEGIN}\n{body}\n{MARKER_END}\n");
 
@@ -81,6 +84,32 @@ mod tests {
         assert!(
             !content.contains("README-DDD-HARNESS.md"),
             "DDD readme added when DDD not installed"
+        );
+    }
+
+    #[test]
+    fn includes_readme_run_bob_when_file_exists() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(tmp.path().join("README-RUN-BOB.md"), "x").unwrap();
+
+        ensure_gitignore(tmp.path()).unwrap();
+
+        let content = fs::read_to_string(tmp.path().join(".gitignore")).unwrap();
+        assert!(content.contains(".trae/"));
+        assert!(
+            content.contains("README-RUN-BOB.md"),
+            "Bob readme not added to ignore block"
+        );
+    }
+
+    #[test]
+    fn omits_readme_run_bob_when_file_absent() {
+        let tmp = TempDir::new().unwrap();
+        ensure_gitignore(tmp.path()).unwrap();
+        let content = fs::read_to_string(tmp.path().join(".gitignore")).unwrap();
+        assert!(
+            !content.contains("README-RUN-BOB.md"),
+            "Bob readme added when bob not installed"
         );
     }
 

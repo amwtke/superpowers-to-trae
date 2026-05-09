@@ -10,6 +10,7 @@ use std::path::Path;
 use crate::rollback::InstallSession;
 
 pub mod ddd;
+pub mod bob;
 
 pub trait Addon {
     fn name(&self) -> &str;
@@ -37,8 +38,9 @@ pub fn resolve_addons(addons: &[String]) -> Result<Vec<Box<dyn Addon>>> {
     for a in addons {
         match a.as_str() {
             "ddd" => out.push(Box::new(ddd::DddAddon)),
+            "bob" => out.push(Box::new(bob::BobAddon)),
             other => bail!(
-                "Unknown addon: '{}' (supported in v0.2: 'ddd')",
+                "Unknown addon: '{}' (supported: 'ddd', 'bob')",
                 other
             ),
         }
@@ -87,5 +89,20 @@ mod tests {
     #[test]
     fn handle_addons_alias_errors_on_unknown() {
         assert!(handle_addons(&["bogus".to_string()]).is_err());
+    }
+
+    #[test]
+    fn resolve_bob_returns_one_addon() {
+        let addons = resolve_addons(&["bob".to_string()]).unwrap();
+        assert_eq!(addons.len(), 1);
+        assert_eq!(addons[0].name(), "bob");
+    }
+
+    #[test]
+    fn resolve_ddd_and_bob_returns_both() {
+        let addons = resolve_addons(&["ddd".to_string(), "bob".to_string()]).unwrap();
+        assert_eq!(addons.len(), 2);
+        assert_eq!(addons[0].name(), "ddd");
+        assert_eq!(addons[1].name(), "bob");
     }
 }

@@ -13,7 +13,7 @@ pub fn run(dir_arg: &str) -> Result<()> {
     let version = env!("CARGO_PKG_VERSION");
     let upstream_version = "5.0.7";
     println!(
-        "superpowers-trae v{} (embedded superpowers {}, ddd plugin v{})",
+        "superpowers-trae v{} (embedded superpowers {}, addon plugins v{})",
         version, upstream_version, version
     );
     println!("Project: {}", dir.display());
@@ -72,38 +72,71 @@ pub fn run(dir_arg: &str) -> Result<()> {
 fn check_addons(dir: &Path, all_ok: &mut bool) {
     let ddd_skills_root = dir.join(".trae/skills/ddd");
     let domain_md = dir.join("DOMAIN.md");
-    let readme = dir.join("README-DDD-HARNESS.md");
+    let ddd_readme = dir.join("README-DDD-HARNESS.md");
+    let has_any_ddd = ddd_skills_root.is_dir() || domain_md.exists() || ddd_readme.exists();
 
-    let has_any_ddd = ddd_skills_root.is_dir() || domain_md.exists() || readme.exists();
-    if !has_any_ddd {
+    let bob_skills_root = dir.join(".trae/skills/bob");
+    let bob_md = dir.join("BOB.md");
+    let bob_readme = dir.join("README-RUN-BOB.md");
+    let has_any_bob = bob_skills_root.is_dir() || bob_md.exists() || bob_readme.exists();
+
+    if !has_any_ddd && !has_any_bob {
         println!("Addons: none");
         return;
     }
 
     println!("Addons:");
 
-    let ddd_skill_count = count_skill_dirs(&ddd_skills_root);
-    let ddd_complete = ddd_skill_count == 3 && domain_md.exists() && readme.exists();
+    if has_any_ddd {
+        let ddd_skill_count = count_skill_dirs(&ddd_skills_root);
+        let ddd_complete = ddd_skill_count == 3 && domain_md.exists() && ddd_readme.exists();
 
-    if ddd_complete {
-        println!("  {} ddd", "✓".green().bold());
-    } else {
-        println!("  {} ddd (incomplete)", "⚠".yellow().bold());
-        *all_ok = false;
+        if ddd_complete {
+            println!("  {} ddd", "✓".green().bold());
+        } else {
+            println!("  {} ddd (incomplete)", "⚠".yellow().bold());
+            *all_ok = false;
+        }
+
+        println!("    - skills:    {} / 3", ddd_skill_count);
+
+        if domain_md.exists() {
+            println!("    - DOMAIN.md  (project root, user-managed)");
+        } else {
+            println!("    - DOMAIN.md  MISSING (run `superpowers-trae upgrade --addons ddd` to restore template)");
+        }
+
+        if ddd_readme.exists() {
+            println!("    - README-DDD-HARNESS.md (project root)");
+        } else {
+            println!("    - README-DDD-HARNESS.md MISSING");
+        }
     }
 
-    println!("    - skills:    {} / 3", ddd_skill_count);
+    if has_any_bob {
+        let bob_skill_count = count_skill_dirs(&bob_skills_root);
+        let bob_complete = bob_skill_count == 3 && bob_md.exists() && bob_readme.exists();
 
-    if domain_md.exists() {
-        println!("    - DOMAIN.md  (project root, user-managed)");
-    } else {
-        println!("    - DOMAIN.md  MISSING (run `superpowers-trae upgrade --addons ddd` to restore template)");
-    }
+        if bob_complete {
+            println!("  {} bob", "✓".green().bold());
+        } else {
+            println!("  {} bob (incomplete)", "⚠".yellow().bold());
+            *all_ok = false;
+        }
 
-    if readme.exists() {
-        println!("    - README-DDD-HARNESS.md (project root)");
-    } else {
-        println!("    - README-DDD-HARNESS.md MISSING");
+        println!("    - skills:    {} / 3", bob_skill_count);
+
+        if bob_md.exists() {
+            println!("    - BOB.md  (project root, user-managed)");
+        } else {
+            println!("    - BOB.md  MISSING (run `superpowers-trae upgrade --addons bob` to restore template)");
+        }
+
+        if bob_readme.exists() {
+            println!("    - README-RUN-BOB.md (project root)");
+        } else {
+            println!("    - README-RUN-BOB.md MISSING");
+        }
     }
 }
 

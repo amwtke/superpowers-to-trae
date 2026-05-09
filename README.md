@@ -50,12 +50,21 @@ superpowers-trae init
 - `.trae/skills/superpowers/` — 14 个 SKILL.md
 - `AGENTS.md` — 项目根，作为双保险
 
-可选 DDD addon（领域驱动设计先建模再实现）：
+可选 addon：
+
+| Addon | 来自 | 装什么 | 启用 |
+|---|---|---|---|
+| `ddd` | [amwtke/ddd-run](https://github.com/amwtke/ddd-run) | 3 个 DDD skill（事件风暴 → 建模 → spec）+ `DOMAIN.md`（install-once）+ `README-DDD-HARNESS.md` | `--addons ddd` |
+| `bob` | [amwtke/run-bob](https://github.com/amwtke/run-bob) | 3 个 Bob 4 环 Clean Architecture skill（身份测试 → 4 环设计 → spec）+ `BOB.md`（install-once）+ `README-RUN-BOB.md` | `--addons bob` |
+
 ```bash
-superpowers-trae init --addons ddd     # 首次同时装
-superpowers-trae upgrade --addons ddd  # 已 init 项目追加
+superpowers-trae init --addons ddd            # 首次单装 ddd
+superpowers-trae init --addons bob            # 首次单装 bob
+superpowers-trae init --addons ddd,bob        # 两个一起装
+superpowers-trae upgrade --addons bob         # 已 init 项目追加 bob
 ```
-追加 3 个 DDD skill + `DOMAIN.md`（已存在不覆盖） + `README-DDD-HARNESS.md`。
+
+`DOMAIN.md` / `BOB.md` 是 install-once 文件，已存在不覆盖。3 个 skill 与 `README-*.md` 每次 upgrade 会刷成最新（默认开 backup，加 `--no-backup` 跳过）。
 
 ### 1.3 在 Trae IDE 里调用
 
@@ -96,20 +105,21 @@ superpowers-trae upgrade
 - 备份现有 `.trae/skills/superpowers/` 与 `project_rules.md`（默认开 backup，加 `--no-backup` 跳过）
 - 用新 binary 内置的 dist 整体覆盖 skills 与 rules
 - `AGENTS.md` 仅追加 superpowers 段，**保留你自己加的内容**
-- 装了 DDD 的项目要带上 `--addons ddd` 才会同时升 DDD skills；`DOMAIN.md` 永远不覆盖
+- 装了 addon 的项目要带上对应 `--addons ddd` / `--addons bob` / `--addons ddd,bob` 才会同时升级 addon skills；`DOMAIN.md` / `BOB.md` 永远不覆盖
 
 ---
 
 ## 三、维护者：发布新版本
 
-本仓库有两条上游、两条同步流水线：
+本仓库有三条上游、三条同步流水线：
 
 | 上游 | 维护内容 | 触发 |
 |---|---|---|
 | [obra/superpowers](https://github.com/obra/superpowers) | `upstream/` 镜像 + `dist/` 渲染产物 | `/update-from-upstream` |
 | [amwtke/ddd-run](https://github.com/amwtke/ddd-run) | `cli/templates/ddd/` 模板 | `/sync-ddd-run` |
+| [amwtke/run-bob](https://github.com/amwtke/run-bob) | `cli/templates/bob/` 模板 | `/sync-run-bob` |
 
-两条流水线的当前上游版本都记录在 `cli/Cargo.toml` 的 `[package.metadata.upstream]` 段（`superpowers_version` / `ddd_run_version`），是判断"是否已是最新"的 SSOT。
+三条流水线的当前上游版本都记录在 `cli/Cargo.toml` 的 `[package.metadata.upstream]` 段（`superpowers_version` / `ddd_run_version` / `run_bob_version`），是判断"是否已是最新"的 SSOT。
 
 ### 3.1 同步 superpowers 上游 — `/update-from-upstream`
 
@@ -150,11 +160,28 @@ git commit -am "..." && git tag v0.x.y && git push origin main --tags
 
 **不在映射表里的上游文件 skill 不动**——例如上游的 `root/CLAUDE.md`（trae 用 `claude-md-merge.md` 替代）、`root/CleanArchitectureTest.java`（属 cli 安装逻辑改动，需单独决策）。skill 只在 Step 4 提醒。
 
+### 3.3 同步 run-bob 上游 — `/sync-run-bob`
+
+由 `.claude/skills/sync-run-bob/SKILL.md` 驱动的 9 步流水线（结构与 sync-ddd-run 一致）：
+
+1. `git status` 工作树必须干净
+2. `git clone --depth 50 https://github.com/amwtke/run-bob.git /tmp/run-bob-sync`
+3. 对比 `cli/Cargo.toml` 里 `run_bob_version` 与上游 HEAD SHA——一致则直接终止
+4. 在 `/tmp/run-bob-sync-rewrite/` 先做 `s/ARCHITECTURE\.md/BOB.md/g` 字串改写（本仓库统一用 `BOB.md` 避撞名），再 diff 5 个映射 md 文件（3 个 bob skill + `BOB.md` + `README-RUN-BOB.md`）+ 列出上游全部 templates 文件
+5. 强制覆盖 5 个映射 md（已 sed 改写过）；防御性 grep 残留 `ARCHITECTURE.md` —— `claude-md-merge.md` 是 trae 专用，永不覆盖
+6. `make test` 全绿
+7. 把 `Cargo.toml` 里 `run_bob_version` 更新为新 SHA
+8. Bump `cli/Cargo.toml` 版本（仅 md 内容增量 → patch；改 cli 代码或加新 skill → minor）
+9. `git commit` + `git tag vX.Y.Z` + `git push --tags` + 输出消费者升级通知文案
+
+**run-bob 与 ddd-run 的差异**：bob 上游里 `ARCHITECTURE.md` 在本仓库统一改名 `BOB.md`，`UseCase.java` / `TransactionalUseCaseDecorator.java` / `CleanArchitectureTest.java` 不进同步范围（属 cli 安装逻辑改动，需单独决策）。
+
 ### 发版历史
 
 | 版本 | 主要内容 |
 |---|---|
-| **v0.3.2** (2026-05-08) | 同步 ddd-run `8cb30e0 → a5f986e`：强化 4 环 Clean Architecture 边界——ddd-model.md 加 2 条领域层污染反模式；ddd-spec.md 加 Result/UseCase/framework 装配模板（用例层零 Spring/SLF4J）；README-DDD-HARNESS.md 加 4 环速览 + ArchUnit 守卫说明 |
+| **v0.4.0** (2026-05-09) | 加 `--addons bob`：基于 run-bob 上游的 Bob 大叔 4 环 Clean Architecture skill 集（bob-identify / bob-onion / bob-spec）+ `BOB.md`（install-once）+ `README-RUN-BOB.md`；新增 `/sync-run-bob` 维护者流水线；`status` 子命令同时报告 ddd / bob addon 状态 |
+| v0.3.2 (2026-05-08) | 同步 ddd-run `8cb30e0 → a5f986e`：强化 4 环 Clean Architecture 边界——ddd-model.md 加 2 条领域层污染反模式；ddd-spec.md 加 Result/UseCase/framework 装配模板（用例层零 Spring/SLF4J）；README-DDD-HARNESS.md 加 4 环速览 + ArchUnit 守卫说明 |
 | v0.3.1 | installer 装完后检测 PATH 冲突 + 残留 |
 | v0.3.0 | 同步 superpowers 5.0.7 → 5.1.0；init/upgrade 自动维护 .gitignore 段 |
 
@@ -166,10 +193,11 @@ git commit -am "..." && git tag v0.x.y && git push origin main --tags
 | `src/` | Python 转换器：mappings.json + transform/render/build_helpers |
 | `scripts/` | sync-upstream.sh / build.sh |
 | `dist/` | Python pipeline 产物，被 Rust binary 编译时嵌入 |
-| `cli/` | Rust CLI 工程（`superpowers-trae` binary）；DDD 模板在 `cli/templates/ddd/` |
+| `cli/` | Rust CLI 工程（`superpowers-trae` binary）；addon 模板在 `cli/templates/{ddd,bob}/` |
 | `tests/` | Python 单测 + 端到端 smoke |
 | `.claude/skills/update-from-upstream/` | superpowers 同步流水线 skill |
 | `.claude/skills/sync-ddd-run/` | ddd-run 同步流水线 skill |
+| `.claude/skills/sync-run-bob/` | run-bob 同步流水线 skill |
 
 ---
 
